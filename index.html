@@ -2,1407 +2,709 @@
 <html lang="zh-CN">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>代码解释器</title>
-
-<link href="https://cdn.jsdelivr.net/npm/prismjs@1.29.0/themes/prism.min.css" rel="stylesheet">
-
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<title>代码解释器 · 智能说明书仪表板</title>
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/themes/prism-tomorrow.min.css">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/prism.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/components/prism-java.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/components/prism-python.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
 <style>
-/* ===========================================================
-   CSS 变量体系 — 严格执行 样式修改.md 规范
-   4px网格 · 锁定字号 · 2级阴影 · 纯色无渐变
-   =========================================================== */
-
 :root {
-  /* 品牌色（限3种） */
-  --color-primary: #2563eb;
-  --color-primary-light: #eff6ff;
-  --color-primary-hover: #1d4ed8;
-
-  /* 文字（限2级） */
-  --color-text-primary: #111827;
-  --color-text-secondary: #6b7280;
-
-  /* 背景 */
-  --color-bg: #ffffff;
-  --color-bg-secondary: #f8f9fa;
-  --color-bg-tertiary: #f1f3f5;
-
-  /* 边框 */
-  --color-border: #e5e7eb;
-  --color-border-light: #f3f4f6;
-
-  /* 推断标记 */
-  --color-inferred: #d97706;
-  --color-inferred-bg: #fffbeb;
-  --color-inferred-border: #fcd34d;
-
-  /* 状态色 */
-  --color-success: #16a34a;
-  --color-success-bg: #f0fdf4;
-  --color-error: #dc2626;
-  --color-error-bg: #fef2f2;
-
-  /* 字号（仅允许这6级） */
-  --text-xs: 12px;
-  --text-sm: 14px;
-  --text-base: 16px;
-  --text-lg: 20px;
-  --text-xl: 24px;
-
-  /* 字重（仅2级） */
-  --font-normal: 400;
-  --font-semibold: 600;
-
-  /* 间距（4px网格） */
-  --space-1: 4px;
-  --space-2: 8px;
-  --space-3: 12px;
-  --space-4: 16px;
-  --space-6: 24px;
-  --space-8: 32px;
-
-  /* 圆角（仅2级） */
-  --radius-sm: 6px;
-  --radius-md: 8px;
-
-  /* 阴影（仅2级，功能导向） */
-  --shadow-light: 0 1px 3px rgba(0,0,0,0.08);
-  --shadow-heavy: 0 4px 16px rgba(0,0,0,0.12);
-
-  /* 字体 */
-  --font-mono: 'Fira Code', 'Cascadia Code', 'Consolas', 'Menlo', monospace;
-  --font-sans: 'Segoe UI', 'PingFang SC', 'Microsoft YaHei', system-ui, sans-serif;
+  --bg-deep: #0B0E17;
+  --surface: #111827;
+  --surface2: #0F1222;
+  --border: #1F2A44;
+  --text: #F0F3FA;
+  --text2: #8B9DC3;
+  --accent: #3B82F6;
+  --accent2: #60A5FA;
+  --success: #34D399;
+  --error: #F87171;
+  --warning: #F59E0B;
+  --radius: 16px;
+}
+*{margin:0;padding:0;box-sizing:border-box}
+body{
+  background:var(--bg-deep);
+  font-family:'Inter',-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;
+  color:var(--text);line-height:1.5;
+}
+.dashboard{display:flex;min-height:100vh}
+.sidebar{
+  width:260px;background:var(--surface2);border-right:1px solid var(--border);
+  padding:24px 20px;display:flex;flex-direction:column;gap:24px;flex-shrink:0;
+}
+.profile{text-align:center;border-bottom:1px solid var(--border);padding-bottom:20px}
+.avatar{
+  width:72px;height:72px;background:linear-gradient(135deg,var(--accent),#8B5CF6);
+  border-radius:50%;display:flex;align-items:center;justify-content:center;
+  margin:0 auto 12px;font-size:28px;font-weight:bold;color:#fff;
+}
+.profile h3{font-size:18px;font-weight:600}.profile p{font-size:12px;color:var(--text2);margin-top:4px}
+.nav-item{
+  display:flex;align-items:center;gap:12px;padding:10px 12px;
+  border-radius:12px;color:var(--text2);font-size:14px;transition:all .2s;cursor:pointer;
+}
+.nav-item.active{background:rgba(59,130,246,0.12);color:#fff}
+.nav-item .nav-icon{font-size:18px}
+.nav-footer{margin-top:auto;font-size:11px;color:#4B5563}
+.main{flex:1;padding:24px 28px 24px 24px;overflow-x:auto}
+.top-bar{display:flex;justify-content:space-between;align-items:center;margin-bottom:24px;flex-wrap:wrap;gap:12px}
+.dashboard-title h1{font-size:26px;font-weight:700}
+.dashboard-title p{color:var(--text2);font-size:13px}
+.activity-badge{
+  background:var(--surface);padding:8px 16px;border-radius:32px;
+  font-size:13px;display:flex;align-items:center;gap:8px;border:1px solid var(--border);
+}
+.activity-badge select{
+  background:transparent;border:none;color:#fff;outline:none;font-size:13px;font-family:inherit;cursor:pointer;
 }
 
-/* ========== Reset ========== */
-*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
-
-body {
-  font-family: var(--font-sans);
-  font-size: var(--text-sm);
-  font-weight: var(--font-normal);
-  color: var(--color-text-primary);
-  background: var(--color-bg);
-  line-height: 1.6;
-  -webkit-font-smoothing: antialiased;
+.stats-row{display:grid;grid-template-columns:repeat(4,1fr);gap:16px;margin-bottom:24px}
+@media(max-width:900px){.stats-row{grid-template-columns:repeat(2,1fr)}}
+.stat-card{
+  background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);
+  padding:18px 20px;
 }
+.stat-label{font-size:11px;text-transform:uppercase;letter-spacing:1px;color:var(--text2)}
+.stat-value{font-size:32px;font-weight:700;margin-top:8px;color:var(--text)}
+.stat-unit{font-size:14px;font-weight:400;color:var(--text2)}
+.stat-trend{font-size:11px;margin-top:4px;font-weight:500}
+.stat-trend.up{color:var(--success)}
+.stat-trend.neutral{color:var(--text2)}
+.stat-trend.new{color:var(--accent2)}
 
-/* ========== 图标（功能指引，非装饰） ========== */
-.icon { display: inline-block; vertical-align: middle; flex-shrink: 0; }
-
-/* ========== 顶部栏 ========== */
-.header {
-  background: var(--color-bg);
-  border-bottom: 1px solid var(--color-border);
-  padding: var(--space-4) var(--space-6);
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  flex-wrap: wrap;
-  gap: var(--space-3);
+.core-grid{display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-bottom:24px}
+@media(max-width:1000px){.core-grid{grid-template-columns:1fr}.sidebar{display:none}}
+.code-panel,.doc-panel{
+  background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);
+  overflow:hidden;display:flex;flex-direction:column;
 }
-
-.header-title {
-  font-size: var(--text-base);
-  font-weight: var(--font-semibold);
-  color: var(--color-text-primary);
+.panel-header{
+  padding:14px 18px;background:rgba(15,23,42,0.6);border-bottom:1px solid var(--border);
+  font-weight:600;font-size:14px;display:flex;justify-content:space-between;flex-wrap:wrap;gap:8px;
 }
-
-.header-right {
-  display: flex;
-  align-items: center;
-  gap: var(--space-2);
+.code-input{
+  width:100%;min-height:300px;padding:16px;
+  font-family:'Fira Code','Cascadia Code',Consolas,monospace;font-size:13px;
+  background:#0A0F1A;border:none;color:#E2E8F0;resize:vertical;outline:none;line-height:1.7;tab-size:4;
 }
-
-.lang-label {
-  font-size: var(--text-sm);
-  color: var(--color-text-secondary);
+.code-input::placeholder{color:#4B5563}
+.btn-group{display:flex;gap:8px;flex-wrap:wrap}
+.btn{
+  background:var(--border);border:none;color:var(--text);padding:7px 14px;
+  border-radius:32px;cursor:pointer;font-size:12px;font-weight:500;transition:all .2s;
+  display:inline-flex;align-items:center;gap:6px;font-family:inherit;
 }
+.btn-primary{background:var(--accent);color:#fff}.btn-primary:hover{background:#2563eb}
+.btn:hover{background:#2D3A5E}
 
-.lang-select {
-  background: var(--color-bg);
-  color: var(--color-text-primary);
-  border: 1px solid var(--color-border);
-  border-radius: var(--radius-sm);
-  padding: var(--space-1) var(--space-3);
-  font-size: var(--text-sm);
-  font-family: var(--font-sans);
-  font-weight: var(--font-normal);
-  cursor: pointer;
-  outline: none;
-  transition: border-color 0.15s;
+.tabs{display:flex;border-bottom:1px solid var(--border);background:rgba(15,23,42,0.6)}
+.tab{
+  flex:1;padding:12px;background:transparent;border:none;color:var(--text2);
+  font-weight:500;font-size:13px;cursor:pointer;font-family:inherit;transition:all .2s;
 }
-.lang-select:focus { border-color: var(--color-primary); }
-
-/* ========== 主体双栏 ========== */
-.main-container {
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: var(--space-6);
-  padding: var(--space-6);
-  max-width: 1440px;
-  margin: 0 auto;
-  min-height: calc(100vh - 140px);
+.tab.active{color:#fff;border-bottom:2px solid var(--accent);background:var(--surface)}
+.doc-content{
+  padding:18px;min-height:300px;max-height:420px;overflow-y:auto;
+  font-size:13px;background:#0A0F1A;line-height:1.7;
 }
 
-@media (max-width: 768px) {
-  .main-container { grid-template-columns: 1fr; }
+.insight-row{display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-bottom:24px}
+@media(max-width:900px){.insight-row{grid-template-columns:1fr}}
+.insight-card{
+  background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:16px 18px;
+}
+.card-title{
+  font-size:11px;text-transform:uppercase;letter-spacing:1px;color:var(--text2);
+  margin-bottom:12px;display:flex;align-items:center;gap:8px;
+}
+.performer-list p,.channel-list p{
+  display:flex;justify-content:space-between;align-items:center;margin-bottom:10px;font-size:13px;
+}
+.percentage{color:var(--success);font-weight:600}
+
+.bottom-grid{display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-top:16px}
+@media(max-width:900px){.bottom-grid{grid-template-columns:1fr}}
+.badge-wall{display:grid;grid-template-columns:repeat(2,1fr);gap:10px}
+.badge-item{background:rgba(30,41,59,0.6);border-radius:14px;padding:12px;text-align:center;transition:opacity .2s;border:1px solid transparent}
+.badge-item.unlocked{background:rgba(59,130,246,0.1);border-color:var(--accent)}
+.badge-item.locked{opacity:.45}
+.badge-icon{font-size:22px;margin-bottom:4px}
+.badge-name{font-size:12px;font-weight:600;margin-bottom:4px}
+.badge-progress{font-size:11px;color:var(--text2);margin-top:2px}
+.badge-item.unlocked .badge-progress{color:var(--accent2)}
+
+.history-list{list-style:none;max-height:180px;overflow-y:auto}
+.history-list li{
+  padding:10px 0;border-bottom:1px solid var(--border);font-size:12px;
+  cursor:pointer;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;color:var(--text2);transition:color .2s;
+}
+.history-list li:hover{color:var(--accent2)}
+.history-func{font-weight:600;color:var(--text);font-family:'Fira Code',monospace;margin-right:6px}
+.history-code{color:var(--text2);font-size:11px;display:block;margin-top:2px}
+
+.footer-actions{margin-top:24px;display:flex;justify-content:flex-end;gap:16px;border-top:1px solid var(--border);padding-top:16px}
+.footer-actions button{background:transparent;border:none;color:var(--text2);cursor:pointer;font-size:12px;font-family:inherit}
+.footer-actions button:hover{color:#fff}
+
+.detail-section{margin-bottom:18px}
+.detail-section h4{font-size:11px;text-transform:uppercase;letter-spacing:1px;color:var(--accent2);margin-bottom:8px}
+.detail-section pre{
+  background:rgba(0,0,0,.3);padding:10px 14px;border-radius:8px;font-size:13px;
+  font-family:'Fira Code',monospace;overflow-x:auto;white-space:pre-wrap;line-height:1.6;
+}
+.detail-section table{width:100%;border-collapse:collapse;margin:8px 0}
+.detail-section th,.detail-section td{border:1px solid var(--border);padding:7px 10px;text-align:left;font-size:12px}
+.detail-section th{background:rgba(15,23,42,0.6);color:var(--text2)}
+.detail-section ul{padding-left:16px;font-size:12px}
+
+.narrative-box{
+  background:rgba(59,130,246,0.06);border-left:3px solid var(--accent);
+  border-radius:0 12px 12px 0;padding:16px 18px;line-height:1.9;font-size:13px;
 }
 
-/* ========== 左栏：输入 ========== */
-.input-panel {
-  display: flex;
-  flex-direction: column;
-  gap: var(--space-3);
-}
+.health-bar-track{height:6px;background:rgba(255,255,255,.08);border-radius:3px;overflow:hidden;margin:10px 0}
+.health-bar-fill{height:100%;border-radius:3px;transition:width .4s}
+.health-bar-fill.good{background:var(--success)}
+.health-bar-fill.warn{background:var(--warning)}
+.health-bar-fill.bad{background:var(--error)}
+.health-metrics{display:flex;flex-wrap:wrap;gap:8px;font-size:11px;color:var(--text2);margin-top:4px}
+.health-metrics span{margin-right:12px}
 
-.code-textarea {
-  flex: 1;
-  min-height: 400px;
-  background: var(--color-bg-secondary);
-  color: var(--color-text-primary);
-  border: 1px solid var(--color-border);
-  border-radius: var(--radius-md);
-  padding: var(--space-4);
-  font-family: var(--font-mono);
-  font-size: var(--text-sm);
-  font-weight: var(--font-normal);
-  line-height: 1.7;
-  resize: vertical;
-  outline: none;
-  transition: border-color 0.15s;
-  tab-size: 4;
-}
-.code-textarea:focus { border-color: var(--color-primary); }
-.code-textarea::placeholder { color: var(--color-text-secondary); }
+.toast{position:fixed;bottom:24px;right:24px;background:var(--accent);color:#fff;padding:10px 20px;border-radius:32px;font-size:13px;font-weight:600;z-index:2000;animation:fadeInUp .3s}
+@keyframes fadeInUp{from{opacity:0;transform:translateY(12px)}to{opacity:1;transform:translateY(0)}}
 
-/* ========== 按钮 ========== */
-.btn-row {
-  display: flex;
-  gap: var(--space-2);
-  flex-wrap: wrap;
-}
+/* Full Stats 弹窗 */
+.modal-overlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,.6);z-index:3000;align-items:center;justify-content:center}
+.modal-overlay.show{display:flex}
+.modal-box{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:24px 28px;width:90%;max-width:480px;max-height:80vh;overflow-y:auto}
+.modal-box h2{font-size:20px;font-weight:700;margin-bottom:20px;display:flex;align-items:center;gap:8px}
+.modal-close{background:transparent;border:none;color:var(--text2);cursor:pointer;font-size:18px;float:right;padding:4px 8px;border-radius:6px}
+.modal-close:hover{color:#fff;background:var(--border)}
+.modal-stat-row{display:flex;justify-content:space-between;align-items:center;padding:10px 0;border-bottom:1px solid var(--border);font-size:14px}
+.modal-stat-row:last-child{border-bottom:none}
+.modal-stat-val{font-weight:700;font-family:'Fira Code',monospace}
 
-.btn {
-  padding: var(--space-2) var(--space-4);
-  border: 1px solid var(--color-border);
-  border-radius: var(--radius-sm);
-  font-size: var(--text-sm);
-  font-weight: var(--font-semibold);
-  font-family: var(--font-sans);
-  cursor: pointer;
-  transition: background 0.15s, border-color 0.15s;
-  display: inline-flex;
-  align-items: center;
-  gap: var(--space-2);
-  background: var(--color-bg);
-  color: var(--color-text-primary);
-}
-.btn:hover { border-color: var(--color-primary); background: var(--color-primary-light); }
-.btn:active { background: var(--color-bg-tertiary); }
-.btn:disabled { opacity: 0.4; cursor: not-allowed; }
-
-.btn-primary {
-  background: var(--color-primary);
-  color: #fff;
-  border-color: var(--color-primary);
-}
-.btn-primary:hover { background: var(--color-primary-hover); border-color: var(--color-primary-hover); }
-
-/* ========== 加载动画 ========== */
-.loading-overlay {
-  display: none;
-  align-items: center;
-  justify-content: center;
-  gap: var(--space-2);
-  padding: var(--space-3);
-  color: var(--color-text-secondary);
-  font-size: var(--text-sm);
-}
-.loading-overlay.active { display: flex; }
-
-.spinner {
-  width: 16px; height: 16px;
-  border: 2px solid var(--color-border);
-  border-top-color: var(--color-primary);
-  border-radius: 50%;
-  animation: spin 0.6s linear infinite;
-}
-@keyframes spin { to { transform: rotate(360deg); } }
-
-/* ========== 错误提示 ========== */
-.error-toast {
-  display: none;
-  background: var(--color-error-bg);
-  border: 1px solid var(--color-error);
-  color: var(--color-error);
-  padding: var(--space-2) var(--space-3);
-  border-radius: var(--radius-sm);
-  font-size: var(--text-sm);
-}
-.error-toast.active { display: block; }
-
-/* ========== 右栏：说明书 ========== */
-.output-panel {
-  background: var(--color-bg);
-  border: 1px solid var(--color-border);
-  border-radius: var(--radius-md);
-  display: flex;
-  flex-direction: column;
-  overflow: hidden;
-  min-height: 500px;
-}
-
-.tab-row { display: flex; border-bottom: 1px solid var(--color-border); }
-
-.tab-btn {
-  flex: 1;
-  padding: var(--space-3) var(--space-4);
-  background: transparent;
-  color: var(--color-text-secondary);
-  border: none;
-  font-size: var(--text-sm);
-  font-weight: var(--font-semibold);
-  font-family: var(--font-sans);
-  cursor: pointer;
-  transition: color 0.15s;
-  position: relative;
-}
-.tab-btn:hover { color: var(--color-text-primary); }
-.tab-btn.active { color: var(--color-primary); }
-.tab-btn.active::after {
-  content: '';
-  position: absolute;
-  bottom: 0; left: var(--space-3); right: var(--space-3);
-  height: 2px;
-  background: var(--color-primary);
-}
-
-.tab-content {
-  display: none;
-  flex: 1;
-  padding: var(--space-6);
-  overflow-y: auto;
-}
-.tab-content.active { display: block; }
-
-/* 空状态 */
-.empty-state {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  height: 100%;
-  color: var(--color-text-secondary);
-  text-align: center;
-  gap: var(--space-2);
-  padding: var(--space-8);
-}
-.empty-state-icon { opacity: 0.3; margin-bottom: var(--space-2); }
-
-/* ========== 说明书内容 ========== */
-.spec-section { margin-bottom: var(--space-6); }
-.spec-section:last-child { margin-bottom: 0; }
-
-.spec-label {
-  font-size: var(--text-xs);
-  font-weight: var(--font-semibold);
-  text-transform: uppercase;
-  letter-spacing: 0.08em;
-  color: var(--color-text-secondary);
-  margin-bottom: var(--space-2);
-}
-
-.spec-signature {
-  background: var(--color-bg-secondary);
-  border: 1px solid var(--color-border);
-  border-radius: var(--radius-sm);
-  padding: var(--space-3) var(--space-4);
-  font-family: var(--font-mono);
-  font-size: var(--text-sm);
-  overflow-x: auto;
-  white-space: pre-wrap;
-  word-break: break-all;
-  line-height: 1.6;
-}
-
-/* ========== 推论标记 ========== */
-.inferred {
-  font-style: italic;
-  border-bottom: 1px dashed var(--color-inferred-border);
-  cursor: help;
-  background: var(--color-inferred-bg);
-  padding: 0 var(--space-1);
-  border-radius: 2px;
-  position: relative;
-  font-weight: var(--font-normal);
-}
-.inferred:hover::after {
-  content: attr(data-tooltip);
-  position: absolute;
-  bottom: calc(100% + var(--space-1));
-  left: 50%;
-  transform: translateX(-50%);
-  background: var(--color-text-primary);
-  color: #fff;
-  border: none;
-  border-radius: var(--radius-sm);
-  padding: var(--space-1) var(--space-2);
-  font-size: var(--text-xs);
-  font-style: normal;
-  font-weight: var(--font-normal);
-  white-space: nowrap;
-  z-index: 10;
-  pointer-events: none;
-}
-
-/* ========== 结构化参数列表 ========== */
-.param-list {
-  list-style: none;
-  display: flex;
-  flex-direction: column;
-  gap: var(--space-1);
-}
-.param-item {
-  display: flex;
-  align-items: baseline;
-  gap: var(--space-2);
-  padding: var(--space-2) var(--space-3);
-  background: var(--color-bg-secondary);
-  border-radius: var(--radius-sm);
-  font-size: var(--text-sm);
-}
-.param-name {
-  font-family: var(--font-mono);
-  color: var(--color-primary);
-  font-weight: var(--font-semibold);
-  min-width: 80px;
-}
-.param-type {
-  color: var(--color-text-secondary);
-  font-size: var(--text-sm);
-}
-.param-type.fact { color: var(--color-text-primary); }
-.param-sep { color: var(--color-border); }
-
-/* ========== 洞察行 ========== */
-.insight-line {
-  font-size: var(--text-sm);
-  color: var(--color-text-secondary);
-  font-style: italic;
-  font-weight: var(--font-normal);
-  line-height: 1.6;
-  padding: var(--space-1) 0;
-  border-left: 2px solid var(--color-primary);
-  padding-left: var(--space-3);
-  margin-top: var(--space-2);
-}
-
-/* ========== 小白版叙事体 ========== */
-.narrative-block {
-  background: var(--color-primary-light);
-  border-left: 4px solid var(--color-primary);
-  border-radius: 0 var(--radius-sm) var(--radius-sm) 0;
-  padding: var(--space-6);
-  font-size: var(--text-base);
-  font-weight: var(--font-normal);
-  line-height: 2;
-  color: var(--color-text-primary);
-}
-
-.narrative-block .narrative-opening {
-  font-size: var(--text-base);
-  font-weight: var(--font-semibold);
-  color: var(--color-primary);
-  display: block;
-  margin-bottom: var(--space-2);
-}
-.narrative-block .narrative-highlight {
-  color: var(--color-primary);
-  font-weight: var(--font-semibold);
-}
-.narrative-block .narrative-func-name {
-  font-family: var(--font-mono);
-  font-weight: var(--font-semibold);
-  background: rgba(37,99,235,0.08);
-  padding: 0 var(--space-1);
-  border-radius: 3px;
-  font-size: 0.9em;
-}
-
-.narrative-extra {
-  margin-top: var(--space-4);
-  padding-top: var(--space-3);
-  border-top: 1px solid var(--color-border);
-  font-size: var(--text-sm);
-  color: var(--color-text-secondary);
-  line-height: 1.8;
-}
-
-/* ========== 徽章 ========== */
-.badge {
-  display: inline-block;
-  padding: var(--space-1) var(--space-2);
-  border-radius: var(--radius-sm);
-  font-size: var(--text-xs);
-  font-weight: var(--font-semibold);
-}
-.badge-java { background: rgba(37,99,235,0.08); color: var(--color-primary); }
-.badge-python { background: rgba(37,99,235,0.08); color: var(--color-primary); }
-.badge-try { background: var(--color-success-bg); color: var(--color-success); }
-.badge-no-try { background: var(--color-error-bg); color: var(--color-error); }
-
-.dep-list {
-  list-style: none;
-  display: flex;
-  flex-wrap: wrap;
-  gap: var(--space-1);
-}
-.dep-list li {
-  background: var(--color-bg-secondary);
-  padding: var(--space-1) var(--space-3);
-  border-radius: var(--radius-sm);
-  font-family: var(--font-mono);
-  font-size: var(--text-sm);
-  border: 1px solid var(--color-border-light);
-}
-
-/* ========== 底部 ========== */
-.footer {
-  text-align: center;
-  padding: var(--space-4);
-  color: var(--color-text-secondary);
-  font-size: var(--text-xs);
-  border-top: 1px solid var(--color-border);
-}
-
-/* ========== Toast ========== */
-.toast {
-  position: fixed;
-  top: var(--space-4);
-  left: 50%;
-  transform: translateX(-50%);
-  background: var(--color-text-primary);
-  color: #fff;
-  padding: var(--space-2) var(--space-4);
-  border-radius: var(--radius-sm);
-  font-size: var(--text-sm);
-  font-weight: var(--font-semibold);
-  z-index: 999;
-  opacity: 0;
-  transition: opacity 0.3s;
-  pointer-events: none;
-}
-.toast.show { opacity: 1; }
+.loading{display:inline-block;width:14px;height:14px;border:2px solid var(--accent2);border-top-color:transparent;border-radius:50%;animation:spin .6s linear infinite;margin-right:6px;vertical-align:middle}
+@keyframes spin{to{transform:rotate(360deg)}}
 </style>
 </head>
 <body>
-
-<!-- ===== 顶部栏 ===== -->
-<header class="header">
-  <span class="header-title">代码解释器</span>
-  <div class="header-right">
-    <span class="lang-label">语言</span>
-    <select class="lang-select" id="langSelect">
-      <option value="java">Java</option>
-      <option value="python">Python</option>
-    </select>
+<!-- Full Stats Modal -->
+<div class="modal-overlay" id="statsModal">
+  <div class="modal-box">
+    <div style="display:flex;justify-content:space-between;align-items:center">
+      <h2 style="margin-bottom:0">&#x25A0; Full Stats</h2>
+      <button class="modal-close" onclick="closeModal()">&times;</button>
+    </div>
+    <div style="margin-top:20px" id="modalStatsContent"></div>
   </div>
-</header>
-
-<!-- ===== 主体 ===== -->
-<div class="main-container">
-
-  <!-- 左栏：输入 -->
-  <div class="input-panel">
-    <textarea
-      class="code-textarea"
-      id="codeInput"
-      placeholder="在此粘贴 Java 或 Python 函数代码..."
-      spellcheck="false"
-    ></textarea>
-
-    <div class="error-toast" id="errorToast"></div>
-
-    <div class="loading-overlay" id="loadingOverlay">
-      <div class="spinner"></div>
-      <span>正在解析代码...</span>
-    </div>
-
-    <div class="btn-row">
-      <button class="btn btn-primary" id="parseBtn">
-        <svg class="icon" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="5 3 19 12 5 21 5 3"/></svg>
-        生成解释
-      </button>
-      <button class="btn" id="copyTechBtn">
-        <svg class="icon" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>
-        复制技术版
-      </button>
-      <button class="btn" id="copyBeginnerBtn">
-        <svg class="icon" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>
-        复制小白版
-      </button>
-      <button class="btn" id="exportBtn">
-        <svg class="icon" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
-        导出分享卡片
-      </button>
-    </div>
-  </div>
-
-  <!-- 右栏：说明书 -->
-  <div class="output-panel" id="outputPanel">
-    <div class="tab-row">
-      <button class="tab-btn active" data-tab="tech">技术版说明书</button>
-      <button class="tab-btn" data-tab="beginner">小白版说明书</button>
-    </div>
-
-    <div class="tab-content active" id="techTab">
-      <div class="empty-state" id="techEmpty">
-        <div class="empty-state-icon">
-          <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="16 18 22 12 16 6"/><polyline points="8 6 2 12 8 18"/></svg>
-        </div>
-        <p>代码的意图尚不明朗</p>
-        <p style="font-size:var(--text-sm);color:var(--color-text-secondary)">粘贴一段代码，让我们揭开它的面纱</p>
-      </div>
-      <div id="techContent" style="display:none"></div>
-    </div>
-
-    <div class="tab-content" id="beginnerTab">
-      <div class="empty-state" id="beginnerEmpty">
-        <div class="empty-state-icon">
-          <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z"/><path d="M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z"/></svg>
-        </div>
-        <p>解析后将在此显示小白版说明书</p>
-      </div>
-      <div id="beginnerContent" style="display:none"></div>
-    </div>
-  </div>
-
 </div>
 
-<!-- ===== 底部 ===== -->
-<footer class="footer">
-  庞凯匀 &middot; 230152061 &middot; 代码解释器 &middot; 纯前端本地解析，不上传任何代码
-</footer>
+<div class="dashboard">
+  <div class="sidebar">
+    <div class="profile">
+      <div class="avatar">&lt;/&gt;</div>
+      <h3>代码解释器</h3>
+      <p>智能说明书 · 本地解析</p>
+    </div>
+    <div class="nav-item active" data-nav="dashboard" onclick="scrollToSection('top')"><span class="nav-icon">&#x25A0;</span> 仪表盘</div>
+    <div class="nav-item" data-nav="doc" onclick="scrollToSection('core')"><span class="nav-icon">&#x25A0;</span> 说明书</div>
+    <div class="nav-item" data-nav="badges" onclick="scrollToSection('bottom')"><span class="nav-icon">&#x25A0;</span> 成就</div>
+    <div class="nav-footer">v3.0 · 无后端 · 纯前端</div>
+  </div>
 
-<div class="toast" id="toast"></div>
+  <div class="main">
+    <div class="top-bar">
+      <div class="dashboard-title">
+        <h1>Dashboard</h1>
+        <p>代码解析统计与智能说明书仪表板</p>
+      </div>
+      <div class="activity-badge">
+        <span>&#x25CF; Activity</span>
+        <select id="langSelect">
+          <option value="java">Java</option>
+          <option value="python">Python</option>
+        </select>
+      </div>
+    </div>
 
-<!-- Prism.js -->
-<script src="https://cdn.jsdelivr.net/npm/prismjs@1.29.0/prism.min.js"></script>
-<script src="https://cdn.jsdelivr.net/npm/prismjs@1.29.0/components/prism-java.min.js"></script>
-<script src="https://cdn.jsdelivr.net/npm/prismjs@1.29.0/components/prism-python.min.js"></script>
-<!-- html2canvas -->
-<script src="https://cdn.jsdelivr.net/npm/html2canvas@1.4.1/dist/html2canvas.min.js"></script>
+    <div class="stats-row" id="sectionTop">
+      <div class="stat-card"><div class="stat-label">总解析次数</div><div class="stat-value" id="totalParses">0</div><div class="stat-trend neutral" id="trendTotal">-</div></div>
+      <div class="stat-card"><div class="stat-label">Java 解析</div><div class="stat-value" id="javaCount">0</div><div class="stat-trend neutral" id="trendJava">-</div></div>
+      <div class="stat-card"><div class="stat-label">Python 解析</div><div class="stat-value" id="pythonCount">0</div><div class="stat-trend neutral" id="trendPython">-</div></div>
+      <div class="stat-card"><div class="stat-label">平均耗时</div><div class="stat-value" id="avgTime">0 <span class="stat-unit">ms</span></div><div class="stat-trend neutral" id="trendAvg">-</div></div>
+    </div>
+
+    <div class="core-grid" id="sectionCore">
+      <div class="code-panel">
+        <div class="panel-header">
+          <span>代码片段</span>
+          <div class="btn-group">
+            <button class="btn btn-primary" id="parseBtn">生成说明书</button>
+            <button class="btn" id="copyTechBtn">复制技术版</button>
+            <button class="btn" id="exportImgBtn">导出卡片</button>
+          </div>
+        </div>
+        <textarea id="codeInput" class="code-input" placeholder='粘贴 Java / Python 函数代码...&#10;例如：public int add(int a, int b) { return a + b; }'></textarea>
+        <div id="loadingIndicator" style="display:none;padding:1rem;text-align:center;color:var(--text2)"><span class="loading"></span> 解析中...</div>
+      </div>
+      <div class="doc-panel">
+        <div class="tabs">
+          <button class="tab active" data-tab="tech">技术版说明书</button>
+          <button class="tab" data-tab="beginner">小白版说明书</button>
+        </div>
+        <div id="techDoc" class="doc-content">点击「生成说明书」查看技术解析</div>
+        <div id="beginnerDoc" class="doc-content" style="display:none">点击「生成说明书」查看生动解释</div>
+      </div>
+    </div>
+
+    <div class="insight-row">
+      <div class="insight-card">
+        <div class="card-title">&#x25B2; Top performers (热门模式)</div>
+        <div id="patternRanking" class="performer-list"><p style="color:var(--text2)">暂无数据</p></div>
+      </div>
+      <div class="insight-card">
+        <div class="card-title">&#x25CF; Channels (比喻命中率)</div>
+        <div id="metaphorStats" class="channel-list"><p style="color:var(--text2)">暂无数据</p></div>
+      </div>
+    </div>
+
+    <div class="bottom-grid" id="sectionBottom">
+      <div class="insight-card">
+        <div class="card-title">&#x2605; 我的成就</div>
+        <div id="badgeWall" class="badge-wall"></div>
+      </div>
+      <div class="insight-card">
+        <div class="card-title">&#x23F1; 最近解析</div>
+        <ul class="history-list" id="historyList"><li style="color:var(--text2)">暂无记录</li></ul>
+      </div>
+    </div>
+
+    <div class="footer-actions">
+      <button id="fullStatsBtn">Full Stats</button>
+      <button id="logoutBtn">Log out (重置数据)</button>
+    </div>
+  </div>
+</div>
 
 <script>
-/* ==================================================================
-   代码解释器 — 核心引擎
-   科学家的严谨 x 哲学家的深刻 x 科普作家的叙事力
-   ================================================================== */
-
-/* ==================== 比喻库 (38条 - 概念域映射) ==================== */
+// ==================== 比喻库 (38条-概念域映射) ====================
 const METAPHOR_LIBRARY = [
-  { keywords: ['sort','排序','sorted','orderby'],
-    concept: '排序', metaphor: '整理一叠乱序的扑克牌', action: '把杂乱无章的东西按照一定的规则排列整齐', inputDesc: '乱序的数据集合', outputDesc: '排好顺序的数据' },
-  { keywords: ['filter','过滤','where','筛选'],
-    concept: '过滤', metaphor: '用筛子筛面粉', action: '把符合要求的东西留下来，不符合的挡在外面', inputDesc: '混合着粗细颗粒的数据', outputDesc: '只含符合要求的部分' },
-  { keywords: ['map','映射','transform','转换','apply'],
-    concept: '映射', metaphor: '给一篮苹果逐个贴上标签变成新的果篮', action: '对每一个元素进行相同的变换操作', inputDesc: '原始数据集合', outputDesc: '每个元素经过变换后的新集合' },
-  { keywords: ['reduce','聚合','fold','accumulate','sum'],
-    concept: '聚合', metaphor: '把一把零钱换成一张大钞', action: '将分散的多项数据合并浓缩为一个结果', inputDesc: '多项分散的数据', outputDesc: '一个综合的结果' },
-  { keywords: ['recursion','recursive','递归'],
-    concept: '递归', metaphor: '一层层打开俄罗斯套娃直到最小的那个', action: '把大问题层层分解为同类的小问题，到底后再逐层返回答案', inputDesc: '一个复杂的问题', outputDesc: '分解到最底层后汇总出的答案' },
-  { keywords: ['read','读取','readfile','open'],
-    concept: '读取', metaphor: '打开冰箱门拿出食物', action: '从外部获取需要的信息而无需了解底层原理', inputDesc: '一个文件路径或数据源地址', outputDesc: '文件中的内容' },
-  { keywords: ['write','写入','writefile','save','保存'],
-    concept: '写入', metaphor: '在日记本上记录当天的想法', action: '把处理好的信息一笔一划地存到指定位置', inputDesc: '要保存的数据和目标位置', outputDesc: '持久化保存的确认' },
-  { keywords: ['search','查找','find','搜索','indexof','contains'],
-    concept: '查找', metaphor: '在图书馆里按编号找书', action: '从一大堆数据中快速定位你要的那个目标', inputDesc: '要查找的目标和搜索范围', outputDesc: '目标数据的位置或内容' },
-  { keywords: ['loop','循环','for','while','foreach','遍历','iterate'],
-    concept: '循环', metaphor: '流水线上的工人逐一检查每个零件', action: '对一组数据中的每一个元素，不厌其烦地重复相同的操作', inputDesc: '一组数据', outputDesc: '每个元素都经过处理后的结果' },
-  { keywords: ['if','else','条件','判断','switch','分支'],
-    concept: '条件判断', metaphor: '站在岔路口看路标选方向', action: '根据不同的情况选择不同的处理方式', inputDesc: '一个需要判断的条件', outputDesc: '根据条件走不同分支后的结果' },
-  { keywords: ['function','方法','函数','def'],
-    concept: '函数', metaphor: '看菜谱做菜', action: '按照写好的步骤接受原材料做出成品', inputDesc: '原材料（参数）', outputDesc: '做好的菜（返回值）' },
-  { keywords: ['class','类','对象','object','new'],
-    concept: '类', metaphor: '按照设计蓝图造车', action: '作为模板定义属性和行为，用它可以创建出一个个具体的实例', inputDesc: '一个类的定义', outputDesc: '按蓝图创建的对象实例' },
-  { keywords: ['array','list','数组','列表','集合'],
-    concept: '列表', metaphor: '一张可以涂改的购物清单', action: '把要处理的东西一行行列出来，方便随时增减', inputDesc: '零散的数据项', outputDesc: '组织好的数据列表' },
-  { keywords: ['dictionary','dict','map','hashmap','字典','键值'],
-    concept: '字典', metaphor: '一本可以快速翻查的通讯录', action: '给每个值配一个唯一的名字，想查什么直接按名字找', inputDesc: '键值对数据', outputDesc: '按名查到的对应值' },
-  { keywords: ['try','catch','except','异常','错误处理','exception'],
-    concept: '异常处理', metaphor: '汽车的安全气囊', action: '平时不显山露水，一旦出了意外就立刻启动保护', inputDesc: '可能出错的代码段', outputDesc: '要么正常执行，要么被安全兜住' },
-  { keywords: ['import','require','引入','依赖','from','include'],
-    concept: '引入依赖', metaphor: '做菜前去隔壁借好刀好锅', action: '借用别人写好的工具，不必每件事都自己从头发明', inputDesc: '需要借用的模块名', outputDesc: '引入的外部功能' },
-  { keywords: ['variable','变量','赋值','let','const'],
-    concept: '变量', metaphor: '一张可以随时改写的便利贴', action: '临时存一个值，不用了就可以换掉', inputDesc: '要存储的值', outputDesc: '贴有内容的变量' },
-  { keywords: ['string','字符串','文本','str'],
-    concept: '字符串', metaphor: '一串可以拆开重组的字母珠链', action: '存储和操作文本，可以拼接、截断、替换', inputDesc: '一段文字', outputDesc: '处理后的文字' },
-  { keywords: ['api','http','fetch','请求','request','curl'],
-    concept: 'API调用', metaphor: '在餐厅点餐等上菜', action: '告诉对方你需要什么，然后等待对方把结果端上来', inputDesc: '请求的地址和参数', outputDesc: '服务端返回的数据' },
-  { keywords: ['cache','缓存','memo','记忆'],
-    concept: '缓存', metaphor: '记性特别好的助手', action: '第一次算出来就记住，下次直接拿出来用不再重算', inputDesc: '需要计算的数据', outputDesc: '要么即时计算、要么从缓存中直接拿到' },
-  { keywords: ['database','数据库','sql','db'],
-    concept: '数据库', metaphor: '编号整齐的大文件柜', action: '把数据按照结构存取，想找什么按编号一拉抽屉就能拿到', inputDesc: '要存取的数据', outputDesc: '查询或写入的结果' },
-  { keywords: ['algorithm','算法'],
-    concept: '算法', metaphor: '搭乐高的步骤说明书', action: '每一步做哪个操作都写得清清楚楚，跟着走就能得到结果', inputDesc: '待解决的问题', outputDesc: '按步骤走完后的答案' },
-  { keywords: ['callback','回调','回调函数'],
-    concept: '回调', metaphor: '给快递员留电话号码', action: '把事情托付出去就去忙别的，等对方办完了自然会通知你', inputDesc: '要委托的任务', outputDesc: '处理完的通知' },
-  { keywords: ['async','await','promise','异步','then'],
-    concept: '异步', metaphor: '在网上点外卖', action: '下完单不用守着厨房，该干嘛干嘛，饭到了自然有人通知你', inputDesc: '一个需要等待的操作', outputDesc: '等待完成后拿到的结果' },
-  { keywords: ['encrypt','加密','decrypt','解密','hash','哈希'],
-    concept: '加密', metaphor: '把秘密锁进保险箱', action: '把信息改得谁也看不懂，只有拿着钥匙的人才能还原', inputDesc: '原始信息', outputDesc: '加密后的密文' },
-  { keywords: ['compress','压缩','zip','gzip'],
-    concept: '压缩', metaphor: '用真空压缩袋收纳衣被', action: '抽掉冗余空气让体积缩小，等要用时再恢复原样', inputDesc: '体积较大的原始数据', outputDesc: '压缩后的小体积数据' },
-  { keywords: ['parse','解析','parser','token'],
-    concept: '解析', metaphor: '拆开一份包装精美的礼物', action: '把外层结构一层层剥开，取出里面真正有用的东西', inputDesc: '带有包装格式的数据', outputDesc: '拆解出的核心内容' },
-  { keywords: ['validate','验证','校验','check','assert'],
-    concept: '校验', metaphor: '办公楼门口的门卫大爷', action: '一个一个检查有没有工牌，没工牌的不放行', inputDesc: '需要检查的数据', outputDesc: '通过检查的数据或拒绝信息' },
-  { keywords: ['log','日志','logger','print','输出','console'],
-    concept: '日志', metaphor: '船长的航海日志', action: '把发生的事情如实写下来，以后出问题可以回溯', inputDesc: '要记录的信息', outputDesc: '留存的日志记录' },
-  { keywords: ['queue','队列','fifo'],
-    concept: '队列', metaphor: '在电影院排队买票', action: '先来的先服务、后来的排后面，公平有序', inputDesc: '逐个到来的任务', outputDesc: '按顺序处理后的结果' },
-  { keywords: ['stack','栈','lifo','堆栈'],
-    concept: '栈', metaphor: '一叠从下往上码的盘子', action: '最后放上去的盘子最先被拿下来用，底下的最后才用到', inputDesc: '按顺序压入的数据', outputDesc: '按逆序弹出的数据' },
-  { keywords: ['tree','树','二叉树'],
-    concept: '树结构', metaphor: '一个大家族的谱系图', action: '从根开始一层层分叉，每一层都是更细的分类', inputDesc: '有层级关系的数据', outputDesc: '按树形组织好的结构' },
-  { keywords: ['graph','图','network','网络'],
-    concept: '图', metaphor: '一张地铁线路图', action: '每个站点是节点，线路是连接，你可以找到任意两站之间的路径', inputDesc: '节点和它们之间的连接关系', outputDesc: '路径或网络分析结果' },
-  { keywords: ['singleton','单例','唯一','single'],
-    concept: '单例', metaphor: '太阳系唯一的太阳', action: '无论你从哪问，答案都指向同一个它，不会变出第二个', inputDesc: '请求获取实例', outputDesc: '全局唯一的那个实例' },
-  { keywords: ['factory','工厂','create'],
-    concept: '工厂模式', metaphor: '汽车制造厂的生产线', action: '你告诉它要什么车型，它就开动生产线给你造出一辆来', inputDesc: '要创建的对象的规格要求', outputDesc: '创建好的对象实例' },
-  { keywords: ['observer','观察者','listener','event','监听','订阅'],
-    concept: '观察者模式', metaphor: '订阅了一份早报', action: '一旦有新消息，报社就自动把报纸塞进你家信箱', inputDesc: '注册一个监听者', outputDesc: '事件发生时自动收到通知' },
-  { keywords: ['decorator','装饰器','wrapper','包装'],
-    concept: '装饰器', metaphor: '给手机贴膜再套上保护壳', action: '不改变原有功能，但从外面多加了一层保护和额外能力', inputDesc: '需要增强的功能', outputDesc: '包装后的增强版功能' },
-  { keywords: ['iterator','迭代器','遍历器'],
-    concept: '迭代器', metaphor: '一页一页翻书', action: '每次只拿出一个数据，翻完了整个集合也就看完了', inputDesc: '一个数据集合', outputDesc: '逐个取出的元素' }
+  {keywords:['sort','排序','sorted','orderby'],concept:'排序',metaphor:'整理一叠乱序的扑克牌',action:'把杂乱无章的东西按照一定的规则排列整齐',inputDesc:'乱序的数据集合',outputDesc:'排好顺序的数据'},
+  {keywords:['filter','过滤','where','筛选'],concept:'过滤',metaphor:'用筛子筛面粉',action:'把符合要求的东西留下来，不符合的挡在外面',inputDesc:'混合着粗细颗粒的数据',outputDesc:'只含符合要求的部分'},
+  {keywords:['map','映射','transform','转换','apply'],concept:'映射',metaphor:'给一篮苹果逐个贴上标签变成新的果篮',action:'对每一个元素进行相同的变换操作',inputDesc:'原始数据集合',outputDesc:'每个元素经过变换后的新集合'},
+  {keywords:['reduce','聚合','fold','accumulate','sum'],concept:'聚合',metaphor:'把一把零钱换成一张大钞',action:'将分散的多项数据合并浓缩为一个结果',inputDesc:'多项分散的数据',outputDesc:'一个综合的结果'},
+  {keywords:['recursion','recursive','递归'],concept:'递归',metaphor:'一层层打开俄罗斯套娃直到最小的那个',action:'把大问题层层分解为同类的小问题，到底后再逐层返回答案',inputDesc:'一个复杂的问题',outputDesc:'分解到最底层后汇总出的答案'},
+  {keywords:['read','读取','readfile','open'],concept:'读取',metaphor:'打开冰箱门拿出食物',action:'从外部获取需要的信息而无需了解底层原理',inputDesc:'一个文件路径或数据源地址',outputDesc:'文件中的内容'},
+  {keywords:['write','写入','writefile','save','保存'],concept:'写入',metaphor:'在日记本上记录当天的想法',action:'把处理好的信息一笔一划地存到指定位置',inputDesc:'要保存的数据和目标位置',outputDesc:'持久化保存的确认'},
+  {keywords:['search','查找','find','搜索','indexof','contains'],concept:'查找',metaphor:'在图书馆里按编号找书',action:'从一大堆数据中快速定位你要的那个目标',inputDesc:'要查找的目标和搜索范围',outputDesc:'目标数据的位置或内容'},
+  {keywords:['loop','循环','for','while','foreach','遍历','iterate'],concept:'循环',metaphor:'流水线上的工人逐一检查每个零件',action:'对一组数据中的每一个元素，不厌其烦地重复相同的操作',inputDesc:'一组数据',outputDesc:'每个元素都经过处理后的结果'},
+  {keywords:['if','else','条件','判断','switch','分支'],concept:'条件判断',metaphor:'站在岔路口看路标选方向',action:'根据不同的情况选择不同的处理方式',inputDesc:'一个需要判断的条件',outputDesc:'根据条件走不同分支后的结果'},
+  {keywords:['function','方法','函数','def'],concept:'函数',metaphor:'看菜谱做菜',action:'按照写好的步骤接受原材料做出成品',inputDesc:'原材料（参数）',outputDesc:'做好的菜（返回值）'},
+  {keywords:['class','类','对象','object','new'],concept:'类',metaphor:'按照设计蓝图造车',action:'作为模板定义属性和行为',inputDesc:'一个类的定义',outputDesc:'按蓝图创建的对象实例'},
+  {keywords:['array','list','数组','列表','集合'],concept:'列表',metaphor:'一张可以涂改的购物清单',action:'把要处理的东西一行行列出来',inputDesc:'零散的数据项',outputDesc:'组织好的数据列表'},
+  {keywords:['dictionary','dict','map','hashmap','字典','键值'],concept:'字典',metaphor:'一本可以快速翻查的通讯录',action:'给每个值配一个唯一的名字，想查什么按名字找',inputDesc:'键值对数据',outputDesc:'按名查到的对应值'},
+  {keywords:['try','catch','except','异常','错误处理','exception'],concept:'异常处理',metaphor:'汽车的安全气囊',action:'平时不显山露水，一旦出了意外就立刻启动保护',inputDesc:'可能出错的代码段',outputDesc:'要么正常执行，要么被安全兜住'},
+  {keywords:['import','require','引入','依赖','from','include'],concept:'引入依赖',metaphor:'做菜前去隔壁借好刀好锅',action:'借用别人写好的工具',inputDesc:'需要借用的模块名',outputDesc:'引入的外部功能'},
+  {keywords:['variable','变量','赋值','let','const'],concept:'变量',metaphor:'一张可以随时改写的便利贴',action:'临时存一个值，不用了就可以换掉',inputDesc:'要存储的值',outputDesc:'贴有内容的变量'},
+  {keywords:['string','字符串','文本','str'],concept:'字符串',metaphor:'一串可以拆开重组的字母珠链',action:'存储和操作文本，可以拼接、截断、替换',inputDesc:'一段文字',outputDesc:'处理后的文字'},
+  {keywords:['api','http','fetch','请求','request','curl'],concept:'API调用',metaphor:'在餐厅点餐等上菜',action:'告诉对方你需要什么，然后等待对方把结果端上来',inputDesc:'请求的地址和参数',outputDesc:'服务端返回的数据'},
+  {keywords:['cache','缓存','memo','记忆'],concept:'缓存',metaphor:'记性特别好的助手',action:'第一次算出来就记住，下次直接拿出来用不再重算',inputDesc:'需要计算的数据',outputDesc:'要么即时计算、要么从缓存中直接拿到'},
+  {keywords:['database','数据库','sql','db'],concept:'数据库',metaphor:'编号整齐的大文件柜',action:'把数据按照结构存取',inputDesc:'要存取的数据',outputDesc:'查询或写入的结果'},
+  {keywords:['algorithm','算法'],concept:'算法',metaphor:'搭乐高的步骤说明书',action:'每一步做哪个操作都写得清清楚楚',inputDesc:'待解决的问题',outputDesc:'按步骤走完后的答案'},
+  {keywords:['callback','回调','回调函数'],concept:'回调',metaphor:'给快递员留电话号码',action:'把事情托付出去就去忙别的，等对方办完了自然会通知你',inputDesc:'要委托的任务',outputDesc:'处理完的通知'},
+  {keywords:['async','await','promise','异步','then'],concept:'异步',metaphor:'在网上点外卖',action:'下完单不用守着厨房，饭到了自然有人通知你',inputDesc:'一个需要等待的操作',outputDesc:'等待完成后拿到的结果'},
+  {keywords:['encrypt','加密','decrypt','解密','hash','哈希'],concept:'加密',metaphor:'把秘密锁进保险箱',action:'把信息改得谁也看不懂',inputDesc:'原始信息',outputDesc:'加密后的密文'},
+  {keywords:['compress','压缩','zip','gzip'],concept:'压缩',metaphor:'用真空压缩袋收纳衣被',action:'抽掉冗余空气让体积缩小',inputDesc:'体积较大的原始数据',outputDesc:'压缩后的小体积数据'},
+  {keywords:['parse','解析','parser','token'],concept:'解析',metaphor:'拆开一份包装精美的礼物',action:'把外层结构一层层剥开',inputDesc:'带有包装格式的数据',outputDesc:'拆解出的核心内容'},
+  {keywords:['validate','验证','校验','check','assert'],concept:'校验',metaphor:'办公楼门口的门卫大爷',action:'一个一个检查有没有工牌',inputDesc:'需要检查的数据',outputDesc:'通过检查的数据或拒绝信息'},
+  {keywords:['log','日志','logger','print','输出','console'],concept:'日志',metaphor:'船长的航海日志',action:'把发生的事情如实写下来',inputDesc:'要记录的信息',outputDesc:'留存的日志记录'},
+  {keywords:['queue','队列','fifo'],concept:'队列',metaphor:'在电影院排队买票',action:'先来的先服务，后来的排后面',inputDesc:'逐个到来的任务',outputDesc:'按顺序处理后的结果'},
+  {keywords:['stack','栈','lifo','堆栈'],concept:'栈',metaphor:'一叠从下往上码的盘子',action:'最后放上去的盘子最先被拿下来用',inputDesc:'按顺序压入的数据',outputDesc:'按逆序弹出的数据'},
+  {keywords:['tree','树','二叉树'],concept:'树结构',metaphor:'一个大家族的谱系图',action:'从根开始一层层分叉',inputDesc:'有层级关系的数据',outputDesc:'按树形组织好的结构'},
+  {keywords:['graph','图','network','网络'],concept:'图',metaphor:'一张地铁线路图',action:'每个站点是节点，线路是连接',inputDesc:'节点和它们之间的连接关系',outputDesc:'路径或网络分析结果'},
+  {keywords:['singleton','单例','唯一','single'],concept:'单例',metaphor:'太阳系唯一的太阳',action:'无论你从哪问，答案都指向同一个它',inputDesc:'请求获取实例',outputDesc:'全局唯一的那个实例'},
+  {keywords:['factory','工厂','create'],concept:'工厂模式',metaphor:'汽车制造厂的生产线',action:'你告诉它要什么车型，它就开动生产线给你造',inputDesc:'要创建的对象的规格要求',outputDesc:'创建好的对象实例'},
+  {keywords:['observer','观察者','listener','event','监听','订阅'],concept:'观察者模式',metaphor:'订阅了一份早报',action:'一旦有新消息，就自动通知你',inputDesc:'注册一个监听者',outputDesc:'事件发生时自动收到通知'},
+  {keywords:['decorator','装饰器','wrapper','包装'],concept:'装饰器',metaphor:'给手机贴膜再套上保护壳',action:'不改变原有功能，但从外面多加了一层保护和额外能力',inputDesc:'需要增强的功能',outputDesc:'包装后的增强版功能'},
+  {keywords:['iterator','迭代器','遍历器'],concept:'迭代器',metaphor:'一页一页翻书',action:'每次只拿出一个数据',inputDesc:'一个数据集合',outputDesc:'逐个取出的元素'}
 ];
+var DEFAULT_METAPHOR_ENTRY = {concept:'数据处理',metaphor:'一位可靠的助手',action:'接收材料，默默处理好，然后把结果递回给你',inputDesc:'需要处理的数据',outputDesc:'处理后的结果'};
 
-const DEFAULT_METAPHOR_ENTRY = {
-  concept: '数据处理', metaphor: '一位可靠的助手', action: '接收材料，默默处理好，然后把结果递回给你', inputDesc: '需要处理的数据', outputDesc: '处理后的结果'
-};
+// ==================== 解析引擎 ====================
+function splitParams(str){
+  var parts=[],depth=0,current='';
+  for(var i=0;i<str.length;i++){
+    var ch=str[i];
+    if(ch===','&&depth===0){parts.push(current);current='';}
+    else{if('<([{'.indexOf(ch)!==-1)depth++;if('>)]}'.indexOf(ch)!==-1)depth--;current+=ch}
+  }
+  var t=current.trim();if(t)parts.push(t);return parts;
+}
+function escapeHtml(str){
+  if(!str)return'';var d=document.createElement('div');d.textContent=str;return d.innerHTML;
+}
+function parseJava(code){
+  var r={methodName:'',parameters:[],returnType:'',dependencies:[],hasTryCatch:false,rawCode:code.trim()};
+  var ir=/import\s+([\w.]+(?:\s*\.\s*\*)?)\s*;/g,m;
+  while((m=ir.exec(code))!==null)r.dependencies.push(m[1]);
+  r.hasTryCatch=/try\s*\{/.test(code);
+  var mr=/(?:(?:public|private|protected)\s+)?(?:static\s+)?(?:final\s+)?(?:synchronized\s+)?([\w.]+(?:<[^>]*>)?(?:\[\])?)\s+(\w+)\s*\(([^)]*)\)/;
+  var mm=code.match(mr);
+  if(mm){
+    r.returnType=mm[1];r.methodName=mm[2];
+    var ps=mm[3].trim();
+    if(ps){r.parameters=splitParams(ps).map(function(p){var pts=p.trim().split(/\s+/);var n=pts.pop()||'';var t=pts.join(' ')||'Object';return{name:n,type:t};})}
+  }else{r.methodName='未命名方法';r.returnType='void'}
+  return r;
+}
+function parsePython(code){
+  var r={methodName:'',parameters:[],returnType:'',dependencies:[],hasTryCatch:false,rawCode:code.trim()};
+  var ir=/^(?:import|from)\s+([\w.]+)/gm,m;
+  while((m=ir.exec(code))!==null)r.dependencies.push(m[1]);
+  r.hasTryCatch=/try\s*:/i.test(code);
+  var dr=/def\s+(\w+)\s*\(([^)]*)\)\s*(?:->\s*(\w+))?\s*:/;
+  var dm=code.match(dr);
+  if(dm){
+    r.methodName=dm[1];r.returnType=dm[3]||'Any';
+    var ps=dm[2].trim();
+    if(ps&&ps!=='self'){r.parameters=splitParams(ps).filter(function(p){var n=p.trim().split(/\s*[:=]/)[0].trim();return n!=='self'&&n!=='cls'}).map(function(p){var t=p.trim(),n=t;var ei=t.indexOf('=');var bd=ei>=0?t.substring(0,ei).trim():t;var ci=bd.indexOf(':');if(ci>=0){n=bd.substring(0,ci).trim();var tp=bd.substring(ci+1).trim();return{name:n,type:tp}}return{name:bd,type:'Any'}})};
+  }else{r.methodName='未命名函数';r.returnType='void'}
+  return r;
+}
 
-/* ==================== 工具函数 ==================== */
+// ==================== 比喻匹配 ====================
+function matchMetaphorEntry(code,parsed){
+  var cl=(parsed.methodName+' '+code).toLowerCase(),best=0,entry=null;
+  for(var i=0;i<METAPHOR_LIBRARY.length;i++){
+    var e=METAPHOR_LIBRARY[i],score=0;
+    for(var j=0;j<e.keywords.length;j++){if(cl.indexOf(e.keywords[j].toLowerCase())!==-1)score+=2}
+    if(score>best){best=score;entry=e}
+  }
+  return{entry:entry||DEFAULT_METAPHOR_ENTRY,matchQuality:best>4?'strong':best>0?'moderate':'fallback',firstKeyword:entry?entry.keywords[0]:'generic'};
+}
 
-function splitParams(str) {
-  const parts = [];
-  let depth = 0, current = '';
-  for (let i = 0; i < str.length; i++) {
-    const ch = str[i];
-    if (ch === ',' && depth === 0) { parts.push(current); current = ''; }
-    else {
-      if ('<([{'.indexOf(ch) !== -1) depth++;
-      if ('>)]}'.indexOf(ch) !== -1) depth--;
-      current += ch;
+// ==================== 洞察 + 模式检测 ====================
+function detectPatterns(parsed,code){
+  var cl=code.toLowerCase(),p=[];var fn=parsed.methodName.toLowerCase();
+  if(new RegExp(fn+'\\s*\\(','i').test(code))p.push('递归');
+  if(/sort|sorted/.test(cl)||/pivot|partition/.test(cl))p.push('排序');
+  if(/cache|memo|memoize|缓存/.test(cl))p.push('缓存');
+  if(parsed.hasTryCatch)p.push('防御性编程');
+  if(/factory|create|build|new\s+\w+/.test(cl)&&/return\s+new/.test(code))p.push('工厂模式');
+  if(/validate|check|验证|校验|assert/.test(cl))p.push('校验');
+  if(/read|write|open|file|io|http|fetch|request/.test(cl))p.push('I/O');
+  if(/loop|for|while|foreach|遍历|循环/.test(cl))p.push('循环');
+  if(/if|else|条件|判断|switch|分支/.test(cl))p.push('条件分支');
+  if(parsed.dependencies.length>0)p.push('模块化');
+  if(p.length===0)p.push('通用处理');
+  return p;
+}
+
+// ==================== 健康度评分 ====================
+function calculateHealthScore(code,parsedParams){
+  var score=100,deductions=[];
+  if(parsedParams.length>3){var pp=(parsedParams.length-3)*5;score-=pp;deductions.push({label:'参数数量',value:parsedParams.length+'个',penalty:'-'+pp})}
+  var lines=code.split('\n').length;
+  if(lines>20){var lp=Math.floor((lines-20)/10)*5;score-=lp;deductions.push({label:'代码行数',value:lines+'行',penalty:'-'+lp})}
+  var maxDepth=0;var la=code.split('\n');
+  for(var i=0;i<la.length;i++){var lead=la[i].length-la[i].trimStart().length;var depth=Math.floor(lead/4);if(depth>maxDepth)maxDepth=depth}
+  if(maxDepth>3){var dp=(maxDepth-3)*4;score-=dp;deductions.push({label:'嵌套深度',value:maxDepth+'层',penalty:'-'+dp})}
+  var cm=(code.match(/if|for|while|&&|\|\||except/g)||[]).length+1;
+  if(cm>5){var cp=(cm-5)*3;score-=cp;deductions.push({label:'圈复杂度',value:cm+'',penalty:'-'+cp})}
+  if(parsedParams.length<=2&&lines<=10)score=Math.min(100,score+5);
+  score=Math.max(0,Math.min(100,score));
+  var suggestions=[];
+  if(parsedParams.length>3)suggestions.push('参数过多，考虑用对象封装');
+  if(lines>20)suggestions.push('函数较长，建议拆分');
+  if(maxDepth>3)suggestions.push('嵌套较深，可提取内层逻辑');
+  if(cm>5)suggestions.push('分支较多，考虑策略模式');
+  return{score:score,level:score>=80?'good':score>=50?'warn':'bad',deductions:deductions,suggestions:suggestions};
+}
+
+// ==================== 语句解释 ====================
+function generateStatementExplanation(code,lang){
+  var lines=code.split('\n'),explanations=[];
+  for(var i=0;i<lines.length;i++){
+    var line=lines[i].trim();
+    if(!line||/^(#|\/\/|\/\*|\*|import\s|from\s|package\s|@|\{|\})/.test(line))continue;
+    var e=null;
+    if(lang==='python'){
+      e=explainPythonLine(line);
+    }else{
+      e=explainJavaLine(line);
     }
+    if(e)explanations.push(e);
   }
-  const t = current.trim();
-  if (t) parts.push(t);
-  return parts;
-}
-
-function escapeHtml(str) {
-  if (!str) return '';
-  const div = document.createElement('div');
-  div.textContent = str;
-  return div.innerHTML;
-}
-
-function inferredSpan(text, tooltip) {
-  return '<span class="inferred" data-tooltip="' + escapeHtml(tooltip || 'AI推断') + '">' + escapeHtml(text) + '</span>';
-}
-
-/* ==================== 解析引擎 ==================== */
-
-function inferReturnType(code, isMethodMatched) {
-  if (/return\s+["'`]/.test(code)) return { value: 'String', isInferred: false, reason: '' };
-  if (/return\s+(true|false)\b/.test(code)) return { value: 'boolean', isInferred: false, reason: '' };
-  if (/return\s+\d+(\.\d+)?/.test(code)) return { value: 'int', isInferred: false, reason: '' };
-  if (/return\s+new\s+(\w+)/.test(code)) {
-    const m = code.match(/return\s+new\s+(\w+)/);
-    return { value: m ? m[1] : 'Object', isInferred: false, reason: '' };
-  }
-  if (/return\s+\w+\s*\(/.test(code)) {
-    const m = code.match(/return\s+(\w+)\s*\(/);
-    return { value: m ? '调用 ' + m[1] + '() 的结果' : '推断返回值', isInferred: true, reason: 'AI推断：基于return语句调用的函数名' };
-  }
-  if (/return\s+\w+/.test(code)) {
-    const m = code.match(/return\s+(\w+)/);
-    return { value: m ? '变量: ' + m[1] : '推断返回值', isInferred: true, reason: 'AI推断：基于return后跟随的变量名' };
-  }
-  if (!/return/.test(code)) {
-    return { value: 'void', isInferred: isMethodMatched ? false : true, reason: isMethodMatched ? '' : 'AI推断：代码中未发现return语句，推测为无返回值' };
-  }
-  return { value: '推断返回值', isInferred: true, reason: 'AI推断：无法精确判定返回类型' };
-}
-
-function inferFunctionName(code, lang) {
-  const cmt = code.match(/(?:\/\/|#)\s*(.+)/);
-  if (cmt) return { value: cmt[1].trim().substring(0, 40), isInferred: true, reason: 'AI推断：基于代码注释内容' };
-  const cl = code.toLowerCase();
-  if (/sort|sorted/.test(cl)) return { value: '排序函数', isInferred: true, reason: 'AI推断：基于代码中检测到的排序关键词' };
-  if (/filter|筛选/.test(cl)) return { value: '过滤函数', isInferred: true, reason: 'AI推断：基于代码中检测到的过滤关键词' };
-  if (/search|find|查找/.test(cl)) return { value: '查找函数', isInferred: true, reason: 'AI推断：基于代码中检测到的搜索关键词' };
-  if (/validate|check|验证/.test(cl)) return { value: '校验函数', isInferred: true, reason: 'AI推断：基于代码中检测到的验证关键词' };
-  if (/parse|解析/.test(cl)) return { value: '解析函数', isInferred: true, reason: 'AI推断：基于代码中检测到的解析关键词' };
-  if (/calc|sum|avg|计算/.test(cl)) return { value: '计算函数', isInferred: true, reason: 'AI推断：基于代码中检测到的计算关键词' };
-  if (/read|读取|load|加载/.test(cl)) return { value: '读取函数', isInferred: true, reason: 'AI推断：基于代码中检测到的读取关键词' };
-  if (/write|save|保存|写入/.test(cl)) return { value: '写入函数', isInferred: true, reason: 'AI推断：基于代码中检测到的写入关键词' };
-  if (/convert|transform|转换/.test(cl)) return { value: '转换函数', isInferred: true, reason: 'AI推断：基于代码中检测到的转换关键词' };
-  if (/print|log|输出|显示/.test(cl)) return { value: '输出函数', isInferred: true, reason: 'AI推断：基于代码中检测到的输出关键词' };
-  if (/=>/.test(code) || /lambda/.test(cl)) return { value: '匿名函数(lambda)', isInferred: true, reason: 'AI推断：检测到箭头函数或lambda表达式' };
-  return { value: lang === 'java' ? '未命名方法' : '未命名函数', isInferred: true, reason: 'AI推断：无法从代码特征中判定函数用途' };
-}
-
-function parseJavaParams(paramsStr) {
-  if (!paramsStr) return [];
-  return splitParams(paramsStr).map(function(part) {
-    const parts = part.trim().split(/\s+/);
-    const name = parts.pop() || '';
-    const type = parts.join(' ') || 'Object';
-    return { name: name, type: type, typeInferred: false, typeInferReason: '' };
-  });
-}
-
-function parsePythonParams(paramsStr) {
-  if (!paramsStr) return [];
-  return splitParams(paramsStr)
-    .filter(function(p) { const n = p.trim().split(/\s*[:=]/)[0].trim(); return n !== 'self' && n !== 'cls'; })
-    .map(function(part) {
-      const trimmed = part.trim();
-      let name = trimmed, type = 'Any', typeInferred = true, typeInferReason = '';
-      const eqIdx = trimmed.indexOf('=');
-      const beforeDefault = eqIdx >= 0 ? trimmed.substring(0, eqIdx).trim() : trimmed;
-      const colonIdx = beforeDefault.indexOf(':');
-      if (colonIdx >= 0) {
-        name = beforeDefault.substring(0, colonIdx).trim();
-        type = beforeDefault.substring(colonIdx + 1).trim();
-        typeInferred = false;
-      } else {
-        name = beforeDefault;
-        const nl = name.toLowerCase();
-        if (/num|count|size|len|index|amount|total|sum|age|year/.test(nl)) { type = 'int'; typeInferReason = 'AI推断：基于参数名中的数量语义'; }
-        else if (/name|label|msg|message|title|text|desc|str/.test(nl)) { type = 'str'; typeInferReason = 'AI推断：基于参数名中的文本语义'; }
-        else if (/arr|list|data|items|collection|elements/.test(nl)) { type = 'list'; typeInferReason = 'AI推断：基于参数名中的集合语义'; }
-        else if (/flag|bool|is_|enabled/.test(nl)) { type = 'bool'; typeInferReason = 'AI推断：基于参数名中的布尔语义'; }
-        else if (/file|path|url|dir/.test(nl)) { type = 'str'; typeInferReason = 'AI推断：基于参数名中的路径语义'; }
-        else if (/obj|object|config|options|settings/.test(nl)) { type = 'dict'; typeInferReason = 'AI推断：基于参数名中的对象语义'; }
-        else { typeInferReason = 'AI推断：无类型注解且无法从参数名判定'; }
-      }
-      return { name: name, type: type, typeInferred: typeInferred, typeInferReason: typeInferReason };
-    });
-}
-
-function parseJava(code) {
-  const result = {
-    methodName: '', methodNameInferred: false, methodNameInferReason: '',
-    parameters: [], returnType: '', returnTypeInferred: false, returnTypeInferReason: '',
-    dependencies: [], hasTryCatch: false, rawCode: code.trim()
-  };
-  const importRe = /import\s+([\w.]+(?:\s*\.\s*\*)?)\s*;/g;
-  let m;
-  while ((m = importRe.exec(code)) !== null) result.dependencies.push(m[1]);
-  result.hasTryCatch = /try\s*\{/.test(code);
-  const methodRe = /(?:(?:public|private|protected)\s+)?(?:static\s+)?(?:final\s+)?(?:synchronized\s+)?([\w.]+(?:<[^>]*>)?(?:\[\])?)\s+(\w+)\s*\(([^)]*)\)/;
-  const mm = code.match(methodRe);
-  if (mm) {
-    result.returnType = mm[1]; result.returnTypeInferred = false; result.returnTypeInferReason = '';
-    result.methodName = mm[2]; result.methodNameInferred = false; result.methodNameInferReason = '';
-    result.parameters = parseJavaParams(mm[3].trim());
-  } else {
-    const rt = inferReturnType(code, false);
-    result.returnType = rt.value; result.returnTypeInferred = rt.isInferred; result.returnTypeInferReason = rt.reason;
-    const ni = inferFunctionName(code, 'java');
-    result.methodName = ni.value; result.methodNameInferred = ni.isInferred; result.methodNameInferReason = ni.reason;
-    result.parameters = inferParamsFromCode(code);
-  }
-  return result;
-}
-
-function parsePython(code) {
-  const result = {
-    methodName: '', methodNameInferred: false, methodNameInferReason: '',
-    parameters: [], returnType: '', returnTypeInferred: false, returnTypeInferReason: '',
-    dependencies: [], hasTryCatch: false, rawCode: code.trim()
-  };
-  const importRe = /^(?:import|from)\s+([\w.]+)/gm;
-  let m;
-  while ((m = importRe.exec(code)) !== null) result.dependencies.push(m[1]);
-  result.hasTryCatch = /try\s*:/i.test(code);
-  const defRe = /def\s+(\w+)\s*\(([^)]*)\)\s*(?:->\s*(\w+))?\s*:/;
-  const dm = code.match(defRe);
-  if (dm) {
-    result.methodName = dm[1]; result.methodNameInferred = false; result.methodNameInferReason = '';
-    if (dm[3]) { result.returnType = dm[3]; result.returnTypeInferred = false; result.returnTypeInferReason = ''; }
-    else { const rt = inferReturnType(code, true); result.returnType = rt.value; result.returnTypeInferred = rt.isInferred; result.returnTypeInferReason = rt.reason; }
-    result.parameters = parsePythonParams(dm[2].trim());
-  } else {
-    const rt = inferReturnType(code, false);
-    result.returnType = rt.value; result.returnTypeInferred = rt.isInferred; result.returnTypeInferReason = rt.reason;
-    const ni = inferFunctionName(code, 'python');
-    result.methodName = ni.value; result.methodNameInferred = ni.isInferred; result.methodNameInferReason = ni.reason;
-    result.parameters = inferParamsFromCode(code);
-  }
-  return result;
-}
-
-function inferParamsFromCode(code) {
-  const params = [];
-  const varRe = /\b([a-zA-Z_]\w*)\s*=/g;
-  const seen = new Set();
-  const reserved = new Set([
-    'if','else','for','while','return','var','let','const','new',
-    'int','String','boolean','void','def','import','from','class',
-    'public','private','protected','static','final','throws','None','True','False'
-  ]);
-  let m;
-  while ((m = varRe.exec(code)) !== null) {
-    const n = m[1];
-    if (!seen.has(n) && !reserved.has(n)) {
-      seen.add(n);
-      if (params.length < 5) params.push({ name: n, type: '推断参数', typeInferred: true, typeInferReason: 'AI推断：基于代码中变量赋值语句' });
-    }
-  }
-  return params;
-}
-
-/* ==================== 代码洞察引擎 ==================== */
-
-function generateInsight(parsed, code) {
-  const cl = code.toLowerCase(), insights = [];
-  const funcName = parsed.methodName.toLowerCase();
-  if (new RegExp(funcName + '\\s*\\(', 'i').test(code)) insights.push('此函数采用递归（分治）策略，将复杂问题逐层分解为规模更小的同类子问题，以栈空间换取代码的简洁性和可读性。');
-  if (/sort|sorted/.test(cl) || /pivot|partition/.test(cl)) insights.push('此函数实现了排序逻辑，通过比较和交换（或分区）将数据重排为有序序列，时间复杂度预计在 O(n log n) 到 O(n squared) 之间。');
-  if (/cache|memo|memoize|缓存/.test(cl)) insights.push('此函数采用了缓存（Memoization）策略，以空间换时间，将已计算的结果暂存，避免重复运算。');
-  if (parsed.hasTryCatch) insights.push('此函数包含防御性编程思维——通过 try-catch/except 对边界条件和异常路径进行容错处理。');
-  if (/yield|iterator|stream|lazy/.test(cl)) insights.push('此函数采用惰性求值策略，数据按需生成而非一次性加载，适合处理大规模或无限序列场景。');
-  if (/factory|create|build|new\s+\w+/.test(cl) && /return\s+new/.test(code)) insights.push('此函数封装了对象创建逻辑（类似工厂模式），将创建决策与创建细节分离，降低调用方与具体实现的耦合。');
-  if (/validate|check|验证|校验|assert/.test(cl)) insights.push('此函数作为数据边界的守门人，在数据进入核心逻辑前预校验，遵循 Fail Fast 原则。');
-  if (/read|write|open|file|io|http|fetch|request/.test(cl)) insights.push('此函数涉及 I/O 操作，属于系统与外部世界交互的边界层，其性能和可靠性往往取决于外部资源的响应。');
-  if (/convert|transform|parse|serialize|deserialize|format/.test(cl)) insights.push('此函数充当数据格式的翻译官，在两种数据表示之间转换，是降低耦合的关键胶水代码。');
-  if (insights.length === 0) {
-    if (parsed.dependencies.length > 0) insights.push('此函数依赖外部模块协同工作，体现了模块化设计原则。');
-    else if (parsed.parameters.length === 0) insights.push('此函数为无参函数，设计上偏向命令（Command）而非查询（Query），关注其副作用。');
-    else insights.push('此函数接收输入并产生输出，是一个典型的数据变换单元，适合作为管道中的一个环节组合使用。');
-  }
-  return insights.join(' ');
-}
-
-/* ==================== 语句级解释引擎 ==================== */
-
-/**
- * 对代码做逐行分析，生成具体的自然语言解释
- * 例如：if 2: print("hi") → "当条件2为真时输出'hi'"
- *       for i in range(5): print(i) → "循环5次，依次打印0到4"
- */
-function generateStatementExplanation(code, lang) {
-  const lines = code.split('\n');
-  const explanations = [];
-
-  for (let i = 0; i < lines.length; i++) {
-    const raw = lines[i];
-    const line = raw.trim();
-    if (!line) continue;
-    // 跳过纯注释、import、package、空白块括号
-    if (/^(#|\/\/|\/\*|\*|import\s|from\s|package\s|@|\{|\})/.test(line)) continue;
-
-    let explained = null;
-
-    if (lang === 'python') {
-      explained = explainPythonStatement(line);
-    } else {
-      explained = explainJavaStatement(line);
-    }
-
-    if (explained) explanations.push(explained);
-  }
-
   return explanations;
 }
 
-function explainPythonStatement(line) {
-  // def 函数定义
-  const defMatch = line.match(/def\s+(\w+)\s*\(([^)]*)\)\s*(?:->\s*\w+\s*)?:/);
-  if (defMatch) {
-    const name = defMatch[1];
-    const params = defMatch[2].trim();
-    if (!params) return '定义一个名为 ' + name + ' 的函数，不需要传入参数';
-    return '定义一个名为 ' + name + ' 的函数，接收参数 ' + params + '';
-  }
+function explainPythonLine(line){
+  var dm=line.match(/def\s+(\w+)\s*\(([^)]*)\)\s*:/);
+  if(dm){return dm[2].trim()?'定义一个接收参数 '+dm[2].trim()+' 的函数 '+dm[1]:'定义一个无参函数 '+dm[1]}
 
-  // if 语句
-  const ifMatch = line.match(/if\s+(.+?)\s*:/);
-  if (ifMatch) {
-    const cond = ifMatch[1].trim();
-    // 特殊处理：if 数字 / 非零值
-    if (/^\d+$/.test(cond) && cond !== '0') {
-      return '当 ' + cond + ' 作为条件时，Python 将非零数字视为 True，因此条件成立，执行后续代码';
-    }
-    if (cond === '0') return '当 0 作为条件时，Python 将零视为 False，因此条件不成立，跳过后续代码';
-    return '当 ' + cond + ' 条件成立时，执行后续代码';
-  }
+  var im=line.match(/if\s+(.+?)\s*:/);
+  if(im){var c=im[1].trim();return /^\d+$/.test(c)&&c!=='0'?'Python将非零数字 '+c+' 视为True，条件成立':/^\d+$/.test(c)?'0视为False，条件不成立':'当 '+c+' 条件成立时执行'}
 
-  // for 循环
-  const forMatch = line.match(/for\s+(\w+)\s+in\s+(.+?)\s*:/);
-  if (forMatch) {
-    const varName = forMatch[1];
-    const iterable = forMatch[2].trim();
-    // range(N)
-    let rm = iterable.match(/range\s*\(\s*(\d+)\s*\)/);
-    if (rm) {
-      const n = parseInt(rm[1]);
-      return '循环 ' + n + ' 次，' + varName + ' 依次取值 0 到 ' + (n - 1);
-    }
-    // range(M, N)
-    rm = iterable.match(/range\s*\(\s*(\d+)\s*,\s*(\d+)\s*\)/);
-    if (rm) {
-      const m = parseInt(rm[1]), n = parseInt(rm[2]);
-      return '循环从 ' + m + ' 到 ' + (n - 1) + '，每次 ' + varName + ' 递增 1';
-    }
-    return '遍历 ' + iterable + ' 中的每个元素，每次赋值给变量 ' + varName;
-  }
+  var fm=line.match(/for\s+(\w+)\s+in\s+(.+?)\s*:/);
+  if(fm){var it=fm[2].trim();var rm=it.match(/range\s*\(\s*(\d+)\s*\)/);return rm?'循环 '+rm[1]+' 次，'+fm[1]+' 依次取0到'+(parseInt(rm[1])-1):'遍历 '+it+' 中的每个元素赋值给 '+fm[1]}
 
-  // print 语句
-  const printMatch = line.match(/print\s*\((.+)\)/);
-  if (printMatch) {
-    return '在控制台输出 ' + printMatch[1].trim();
-  }
+  var pm=line.match(/print\s*\((.+)\)/);
+  if(pm)return '在控制台输出 '+pm[1].trim();
 
-  // return 语句
-  const retMatch = line.match(/return\s+(.+)/);
-  if (retMatch) {
-    return '返回 ' + retMatch[1].trim() + ' 给调用者';
-  }
+  var retm=line.match(/return\s+(.+)/);
+  if(retm)return '返回 '+retm[1].trim()+' 给调用者';
 
-  // 变量赋值
-  const assignMatch = line.match(/^(\w+)\s*=\s*(.+)$/);
-  if (assignMatch) {
-    return '将 ' + assignMatch[2].trim() + ' 赋值给变量 ' + assignMatch[1];
-  }
+  var am=line.match(/^(\w+)\s*=\s*(.+)$/);
+  if(am)return '将 '+am[2].trim()+' 赋值给变量 '+am[1];
 
   return null;
 }
 
-function explainJavaStatement(line) {
-  // 方法定义
-  const methodMatch = line.match(/(?:public|private|protected)?\s*(?:static\s+)?(?:final\s+)?[\w.<>\[\]]+\s+(\w+)\s*\(([^)]*)\)\s*(?:throws\s+[\w.,\s]+)?\s*\{?/);
-  if (methodMatch) {
-    const name = methodMatch[1];
-    const params = methodMatch[2].trim();
-    if (!params) return '定义一个名为 ' + name + ' 的方法，不需要传入参数';
-    return '定义一个名为 ' + name + ' 的方法，接收参数 ' + params + '';
-  }
+function explainJavaLine(line){
+  var jmm=line.match(/(?:public|private|protected)?\s*(?:static\s+)?(?:final\s+)?([\w.<>\[\]]+)\s+(\w+)\s*\(([^)]*)\)/);
+  if(jmm){return jmm[3]&&jmm[3].trim()?'定义方法 '+jmm[2]+'，接收参数 '+jmm[3].trim():'定义无参方法 '+jmm[2]}
 
-  // if 语句
-  const ifMatch = line.match(/if\s*\((.+?)\)\s*\{?/);
-  if (ifMatch) {
-    return '当 ' + ifMatch[1].trim() + ' 条件成立时，执行后续代码块';
-  }
+  var jim=line.match(/if\s*\((.+?)\)/);
+  if(jim)return '当 '+jim[1].trim()+' 成立时执行';
 
-  // for 循环
-  const forMatch = line.match(/for\s*\((.+?)\)\s*\{?/);
-  if (forMatch) {
-    const parts = forMatch[1].trim();
-    // int i = 0; i < N; i++
-    const standardFor = parts.match(/int\s+(\w+)\s*=\s*(\d+)\s*;\s*\w+\s*<\s*(\w+|\d+)\s*;\s*\w+\+\+/);
-    if (standardFor) {
-      return '循环从 ' + standardFor[2] + ' 到 ' + (standardFor[3] === standardFor[1] + '.length' ? '数组末尾' : standardFor[3] + '-1') + '，每次 ' + standardFor[1] + ' 递增 1';
-    }
-    return '执行 for 循环：' + parts;
-  }
+  var jfm=line.match(/for\s*\((.+?)\)/);
+  if(jfm)return '执行循环：'+jfm[1].trim();
 
-  // System.out.print
-  const printMatch = line.match(/System\.out\.print(?:ln)?\s*\((.+)\)/);
-  if (printMatch) {
-    return '在控制台输出 ' + printMatch[1].trim();
-  }
+  var jpm=line.match(/System\.out\.print(?:ln)?\s*\((.+)\)/);
+  if(jpm)return '在控制台输出 '+jpm[1].trim();
 
-  // return
-  const retMatch = line.match(/return\s+(.+);/);
-  if (retMatch) {
-    return '返回 ' + retMatch[1].trim() + ' 给调用者';
-  }
+  var jrm=line.match(/return\s+(.+);/);
+  if(jrm)return '返回 '+jrm[1].trim();
 
-  // 变量声明赋值
-  const varMatch = line.match(/^([\w.<>\[\]]+)\s+(\w+)\s*=\s*(.+);/);
-  if (varMatch) {
-    return '声明一个 ' + varMatch[1] + ' 类型的变量 ' + varMatch[2] + ' 并赋值为 ' + varMatch[3].trim();
-  }
+  var jvm=line.match(/^([\w.<>\[\]]+)\s+(\w+)\s*=\s*(.+);/);
+  if(jvm)return '声明 '+jvm[1]+' 类型变量 '+jvm[2]+' 并赋值 '+jvm[3].trim();
 
   return null;
 }
 
-/* ==================== 概念域匹配引擎 ==================== */
+// ==================== 统计系统 ====================
+var appStats={total:0,javaCount:0,pythonCount:0,totalTime:0,avgTime:0,patternStats:{},metaphorHits:{},history:[],badgeState:{},nightOwl:false};
 
-function matchMetaphorEntry(code, parsed) {
-  const cl = (parsed.methodName + ' ' + code).toLowerCase();
-  let bestScore = 0, bestEntry = null;
-  const contextSignals = [
-    { keys: ['recursion','recursive','递归'], weight: 3 },
-    { keys: ['sort','sorted','排序','pivot','partition'], weight: 3 },
-    { keys: ['cache','memo','缓存','记忆','memoize'], weight: 3 },
-    { keys: ['try','catch','except','finally','throw','throws','raise'], weight: 2 },
-    { keys: ['factory','create','build','construct'], weight: 2 },
-    { keys: ['encrypt','decrypt','hash','加密','解密'], weight: 3 },
-    { keys: ['async','await','promise','then','callback'], weight: 2 },
-    { keys: ['filter','where','筛选','过滤'], weight: 2 },
-    { keys: ['map','transform','映射','转换','apply'], weight: 2 },
-    { keys: ['read','write','open','file','load','save'], weight: 2 },
-    { keys: ['validate','check','assert','验证','校验'], weight: 2 }
-  ];
-  for (let i = 0; i < METAPHOR_LIBRARY.length; i++) {
-    const entry = METAPHOR_LIBRARY[i];
-    let score = 0;
-    for (let j = 0; j < entry.keywords.length; j++) {
-      const kw = entry.keywords[j].toLowerCase();
-      if (cl.indexOf(kw) !== -1) {
-        score += 1;
-        for (let s = 0; s < contextSignals.length; s++) {
-          if (contextSignals[s].keys.indexOf(kw) !== -1) score += contextSignals[s].weight;
-        }
-      }
-    }
-    if (score > bestScore) { bestScore = score; bestEntry = entry; }
-  }
-  return { entry: bestEntry || DEFAULT_METAPHOR_ENTRY, matchQuality: bestScore > 0 ? (bestScore >= 5 ? 'strong' : 'moderate') : 'fallback' };
+function loadStats(){
+  try{var s=localStorage.getItem('codeDocStats');if(s){var l=JSON.parse(s);Object.assign(appStats,l);if(!appStats.history)appStats.history=[];if(!appStats.patternStats)appStats.patternStats={};if(!appStats.metaphorHits)appStats.metaphorHits={};if(!appStats.badgeState)appStats.badgeState={}}}catch(e){}
+  renderAllUI();
+}
+function saveStats(){try{localStorage.setItem('codeDocStats',JSON.stringify(appStats))}catch(e){}}
+
+function recordParse(language,duration,code,metaphorTag,patterns){
+  appStats.total++;if(language==='java')appStats.javaCount++;else appStats.pythonCount++;
+  appStats.totalTime+=duration;appStats.avgTime=Math.round(appStats.totalTime/appStats.total);
+  for(var i=0;i<patterns.length;i++){var p=patterns[i];appStats.patternStats[p]=(appStats.patternStats[p]||0)+1}
+  if(metaphorTag&&metaphorTag!=='generic')appStats.metaphorHits[metaphorTag]=(appStats.metaphorHits[metaphorTag]||0)+1;
+  var fn=code.match(/(?:def|public|private|protected)?\s*(?:static\s+)?(?:\w[\w.<>\[\]]*\s+)?(\w+)\s*\(/);
+  appStats.history.unshift({code:code,language:language,funcName:fn?fn[1]:'func',timestamp:Date.now()});
+  if(appStats.history.length>8)appStats.history.length=8;
+  var h=new Date().getHours();if(h>=0&&h<5)appStats.nightOwl=true;
+  checkBadges();saveStats();renderAllUI();
 }
 
-/* ==================== 小白版叙事体生成器 ==================== */
-
-function generateNarrativeBeginnerDoc(parsed, lang, matchResult) {
-  const entry = matchResult.entry, name = parsed.methodName;
-  const langName = lang === 'java' ? 'Java' : 'Python', lineCount = parsed.rawCode.split('\n').length;
-
-  let paramDesc = '';
-  if (parsed.parameters.length === 0) {
-    paramDesc = '不需要额外给它什么东西，它自己知道从哪里获取信息';
-  } else {
-    const descs = parsed.parameters.map(function(p) {
-      const nl = p.name.toLowerCase();
-      if (/num|count|size|len|index|amount|total|sum|age|year|score/.test(nl)) return '一个数字（' + p.name + '）';
-      if (/name|label|msg|message|title|text|desc|str|key|word/.test(nl)) return '一段文字（' + p.name + '）';
-      if (/arr|list|array|data|items|collection|elements/.test(nl)) return '一组数据（' + p.name + '）';
-      if (/flag|bool|is|enabled/.test(nl)) return '一个"是或否"的选择（' + p.name + '）';
-      if (/file|path|url|dir/.test(nl)) return '一个文件路径或网址（' + p.name + '）';
-      if (/obj|object|config|options|settings/.test(nl)) return '一份配置说明（' + p.name + '）';
-      return p.name;
-    });
-    paramDesc = '你需要交给它 ' + descs.join('、');
-  }
-
-  let outputDesc = '';
-  const rt = (parsed.returnType || '').toLowerCase();
-  if (rt === 'void' || rt === 'none' || !rt) outputDesc = '它不会返回一个具体数值，而是直接产生效果——比如修改了数据、打印了结果或者保存了文件';
-  else if (/int|float|double|num|number|long|short/.test(rt)) outputDesc = '它会返回一个数字给你，这就是你要的计算结果';
-  else if (/string|str/.test(rt)) outputDesc = '它会返回一段文字给你';
-  else if (/bool|boolean/.test(rt)) outputDesc = '它会告诉你是"对"还是"错"（true 或 false），帮你做出下一步判断';
-  else if (/list|array|\[\]|集合/.test(rt)) outputDesc = '它会返回一组排列整齐的数据给你';
-  else if (/map|dict|dictionary/.test(rt)) outputDesc = '它会返回一个对照表给你——你可以像查字典一样用键来查对应的值';
-  else outputDesc = '它会返回处理后的结果给你';
-
-  let opening = '<span class="narrative-opening">这个函数就像是在<span class="narrative-highlight">' + escapeHtml(entry.metaphor) + '</span>。</span>';
-  let body = '';
-  if (matchResult.matchQuality === 'strong') {
-    body = '当你把' + escapeHtml(entry.inputDesc) + '交给它，它会' + escapeHtml(entry.action) + '。在这里，' + paramDesc + '，而它交还给你的，' + escapeHtml(entry.outputDesc) + '。';
-  } else if (matchResult.matchQuality === 'moderate') {
-    body = '简单来说，它做的事情就是' + escapeHtml(entry.action) + '。具体到这段代码，' + paramDesc + '，然后' + outputDesc + '。';
-  } else {
-    body = '它就像一个' + escapeHtml(entry.metaphor) + '——' + escapeHtml(entry.action) + '。在这段代码中，' + paramDesc + '，然后' + outputDesc + '。';
-  }
-
-  // 织入具体代码行为描述
-  var stmtExplanations = generateStatementExplanation(parsed.rawCode, lang);
-  let behaviorSentence = '';
-  if (stmtExplanations.length > 0) {
-    behaviorSentence = '具体来说，' + stmtExplanations.map(function(e) { return e.replace(/。$/, '') }).join('；') + '。';
-  }
-
-  let scenarioSentence = generateScenarioSentence(parsed);
-
-  let extraText = '';
-  if (parsed.dependencies.length > 0) {
-    extraText += '顺便一提，它干活的时候借用了 ' + parsed.dependencies.length + ' 个外部工具（' +
-      parsed.dependencies.slice(0, 3).map(escapeHtml).join('、') +
-      (parsed.dependencies.length > 3 ? ' 等' : '') +
-      '），就像大厨做菜需要好刀好锅一样，这些工具让它事半功倍。';
-  }
-  if (parsed.hasTryCatch) {
-    extraText += '而且你不用担心它突然罢工——它内置了防护措施，就像汽车的安全气囊，即使中途碰到意外情况，也能从容应对而不让整个程序崩溃。';
-  }
-
-  const mainHtml = '' +
-    '<div class="narrative-block">' +
-      opening +
-      '<p style="margin-top:var(--space-4)">' + body + '</p>' +
-      (behaviorSentence ? '<p style="margin-top:var(--space-4)">' + behaviorSentence + '</p>' : '') +
-      '<p style="margin-top:var(--space-4)">' + scenarioSentence + '</p>' +
-    '</div>';
-  const extraHtml = extraText ? '<div class="narrative-extra">' + extraText + '</div>' : '';
-  const metaHtml = '<p style="margin-top:var(--space-3);font-size:var(--text-xs);color:var(--color-text-secondary)">' +
-    langName + ' 代码片段 &middot; ' + lineCount + ' 行 &middot; ' +
-    (matchResult.matchQuality === 'strong' ? '比喻意境匹配度高' : matchResult.matchQuality === 'moderate' ? '比喻意境匹配度中等' : '通用比喻') +
-  '</p>';
-
-  return mainHtml + extraHtml + metaHtml;
+function checkBadges(){
+  var b=appStats.badgeState;var uk=Object.keys(appStats.metaphorHits).length;
+  if(appStats.total>=1&&!b.first_blood){b.first_blood={unlocked:true,time:Date.now()};showToast('解锁徽章：初次解析')}
+  if(appStats.javaCount>=10&&!b.java_master){b.java_master={unlocked:true,time:Date.now()};showToast('解锁徽章：Java 大师')}
+  if(uk>=20&&!b.metaphor_hunter){b.metaphor_hunter={unlocked:true,time:Date.now()};showToast('解锁徽章：比喻猎人')}
+  if(appStats.nightOwl&&!b.night_owl){b.night_owl={unlocked:true,time:Date.now()};showToast('解锁徽章：夜猫子')}
 }
 
-function generateScenarioSentence(parsed) {
-  const cl = (parsed.methodName + ' ' + parsed.rawCode).toLowerCase();
-  const parts = [];
-  if (/sort|sorted|排序/.test(cl)) parts.push('需要对一组数据排序时——比如整理用户列表、排列成绩名次、给商品按价格排序');
-  if (/filter|筛选|过滤|where/.test(cl)) parts.push('需要从一大堆数据里挑出符合条件的那一小部分时——比如从订单中找出未付款的、从联系人中筛选某个城市的人');
-  if (/search|find|查找|搜索/.test(cl)) parts.push('需要在海量数据中快速定位某个目标时——像在一本厚厚的电话簿里找一个人的号码');
-  if (/read|读取|load|加载/.test(cl)) parts.push('需要从文件或外部来源获取信息时');
-  if (/write|save|保存|写入/.test(cl)) parts.push('需要把处理好的结果记录下来时——比如保存配置、输出报告、写入日志');
-  if (/validate|check|验证|校验/.test(cl)) parts.push('需要检查数据是不是符合规则时——格式对不对、有没有漏填、数值是否在合理范围内');
-  if (/encrypt|decrypt|加密|解密|hash/.test(cl)) parts.push('需要保护敏感信息不被别人看到时——密码、身份证号、机密数据');
-  if (/parse|解析/.test(cl)) parts.push('拿到一堆格式复杂的数据需要拆解成程序能直接用的形式时');
-  if (/convert|transform|转换/.test(cl)) parts.push('手头的数据是A格式但下一步需要B格式时——它充当了中间的翻译官');
-  if (/calc|compute|sum|avg|计算/.test(cl)) parts.push('需要对一组数字做数学运算时——求和、算平均、找出最大最小值');
-  if (parts.length === 0) {
-    if (/for\s*\(|while\s*\(|for\s+\w+\s+in/.test(cl)) parts.push('需要一遍遍重复相同的操作，像流水线一样处理数据时');
-    else if (/if\s*\(|if\s+\w+/.test(cl)) parts.push('需要根据不同的情况走不同的处理分支时');
-    else parts.push('在你的程序中需要完成一个特定的处理任务时');
+function renderAllUI(){
+  var te=document.getElementById('totalParses');if(te)te.textContent=appStats.total;
+  var je=document.getElementById('javaCount');if(je)je.textContent=appStats.javaCount;
+  var pe=document.getElementById('pythonCount');if(pe)pe.textContent=appStats.pythonCount;
+  var ae=document.getElementById('avgTime');if(ae)ae.innerHTML=appStats.avgTime+' <span class="stat-unit">ms</span>';
+
+  // 趋势标签
+  var tt=document.getElementById('trendTotal');if(tt){tt.textContent=appStats.total>0?'解析中':'等待首次';tt.className='stat-trend '+(appStats.total>0?'up':'neutral')}
+  var tj=document.getElementById('trendJava');if(tj){tj.textContent=appStats.javaCount>0?appStats.javaCount+' 次':'无';tj.className='stat-trend '+(appStats.javaCount>0?'up':'neutral')}
+  var tp=document.getElementById('trendPython');if(tp){tp.textContent=appStats.pythonCount>0?appStats.pythonCount+' 次':'无';tp.className='stat-trend '+(appStats.pythonCount>0?'up':'neutral')}
+  var ta=document.getElementById('trendAvg');if(ta){ta.textContent=appStats.avgTime>0?appStats.avgTime+' ms/次':'待测';ta.className='stat-trend '+(appStats.avgTime>0&&appStats.avgTime<50?'up':'neutral')}
+
+  var sp=Object.entries(appStats.patternStats).sort(function(a,b){return b[1]-a[1]}).slice(0,3);
+  var totalP=Object.values(appStats.patternStats).reduce(function(a,b){return a+b},0);
+  var ph=sp.map(function(kv,i){var pct=totalP?Math.round(kv[1]/totalP*100):0;return'<p><strong>'+(i+1)+'. '+kv[0]+'</strong> <span class="percentage">'+kv[1]+' 次 ('+pct+'%)</span></p>'}).join('')||'<p style="color:var(--text2)">暂无数据</p>';
+  document.getElementById('patternRanking').innerHTML=ph;
+
+  var sm=Object.entries(appStats.metaphorHits).sort(function(a,b){return b[1]-a[1]}).slice(0,4);
+  var mh=sm.map(function(kv){return'<p>'+kv[0]+' <span style="float:right">'+kv[1]+' 次</span></p>'}).join('')||'<p style="color:var(--text2)">暂无命中</p>';
+  document.getElementById('metaphorStats').innerHTML=mh;
+
+  var hl='';
+  for(var hi=0;hi<Math.min(5,appStats.history.length);hi++){
+    var h=appStats.history[hi];var cs=h.code.replace(/\n/g,' ').substring(0,60);
+    hl+='<li onclick="fillHistoryByIdx('+hi+')"><span class="history-func">'+(h.language==='java'?'Java':'Python')+'</span> <span class="history-code">'+escapeHtml(cs)+'</span></li>';
   }
-  return '当你' + parts.join('；或者当你') + '，把它叫来就能帮你解决。';
-}
+  document.getElementById('historyList').innerHTML=hl||'<li style="color:var(--text2)">暂无记录</li>';
 
-/* ==================== 渲染引擎 ==================== */
-
-function renderTechSpec(parsed, lang) {
-  const langLabel = lang === 'java' ? 'Java' : 'Python';
-  const langBadge = lang === 'java' ? 'badge-java' : 'badge-python';
-
-  const paramsDisplay = parsed.parameters.map(function(p) {
-    const typeStr = p.typeInferred
-      ? inferredSpan(p.type, p.typeInferReason || 'AI推断：参数类型未显式声明')
-      : '<span style="color:var(--color-text-primary)">' + escapeHtml(p.type) + '</span>';
-    return typeStr + ' <span style="color:var(--color-primary);font-weight:var(--font-semibold)">' + escapeHtml(p.name) + '</span>';
-  }).join(', ');
-
-  let signature = '';
-  if (lang === 'java') {
-    const rtSpan = parsed.returnTypeInferred
-      ? inferredSpan(parsed.returnType, parsed.returnTypeInferReason || 'AI推断：基于return语句')
-      : '<span style="color:var(--color-text-primary)">' + escapeHtml(parsed.returnType) + '</span>';
-    const nmSpan = parsed.methodNameInferred
-      ? inferredSpan(parsed.methodName, parsed.methodNameInferReason || 'AI推断：函数名未显式声明')
-      : '<span style="color:var(--color-primary);font-weight:var(--font-semibold)">' + escapeHtml(parsed.methodName) + '</span>';
-    signature = rtSpan + ' ' + nmSpan + '(' + paramsDisplay + ')';
-  } else {
-    const nmSpan = parsed.methodNameInferred
-      ? inferredSpan(parsed.methodName, parsed.methodNameInferReason || 'AI推断：函数名未显式声明')
-      : '<span style="color:var(--color-primary);font-weight:var(--font-semibold)">' + escapeHtml(parsed.methodName) + '</span>';
-    signature = 'def ' + nmSpan + '(' + paramsDisplay + ')';
-    if (parsed.returnType && parsed.returnType !== 'None' && parsed.returnType !== 'void') {
-      const rtSpan = parsed.returnTypeInferred
-        ? ' -> ' + inferredSpan(parsed.returnType, parsed.returnTypeInferReason || 'AI推断：基于return语句')
-        : ' -> <span style="color:var(--color-text-primary)">' + escapeHtml(parsed.returnType) + '</span>';
-      signature += rtSpan;
-    }
+  var badgesDef={
+    first_blood:{id:'first_blood',name:'初次解析',icon:'&#9733;'},
+    java_master:{id:'java_master',name:'Java 大师',icon:'&#9749;'},
+    metaphor_hunter:{id:'metaphor_hunter',name:'比喻猎人',icon:'&#127919;'},
+    night_owl:{id:'night_owl',name:'夜猫子',icon:'&#127769;'}
+  };
+  var uk=Object.keys(appStats.metaphorHits).length;
+  var progressMap={java_master:appStats.javaCount+'/10',metaphor_hunter:uk+'/20'};
+  var bh='';
+  for(var bid in badgesDef){
+    var def=badgesDef[bid];var unlocked=!!(appStats.badgeState[bid]&&appStats.badgeState[bid].unlocked);
+    bh+='<div class="badge-item '+(unlocked?'unlocked':'locked')+'"><div class="badge-icon">'+def.icon+'</div><div class="badge-name">'+def.name+'</div>'+(unlocked?'<div style="font-size:10px;color:var(--accent2)">已达成</div>':(progressMap[bid]?'<div class="badge-progress">'+progressMap[bid]+'</div>':''))+'</div>';
   }
-
-  const insight = generateInsight(parsed, parsed.rawCode);
-
-  let paramHtml = '';
-  if (parsed.parameters.length > 0) {
-    paramHtml = '<ul class="param-list">' + parsed.parameters.map(function(p) {
-      let typeHtml = p.typeInferred
-        ? '<span class="param-type inferred" data-tooltip="' + escapeHtml(p.typeInferReason || 'AI推断') + '">' + escapeHtml(p.type) + '</span>'
-        : '<span class="param-type fact">' + escapeHtml(p.type) + '</span>';
-      return '<li class="param-item">' + '<span class="param-name">' + escapeHtml(p.name) + '</span>' + '<span class="param-sep">:</span>' + typeHtml + '</li>';
-    }).join('') + '</ul>';
-    if (parsed.parameters.some(function(p) { return p.typeInferred; })) {
-      paramHtml += '<div style="margin-top:var(--space-1);font-size:var(--text-xs);color:var(--color-inferred)"><em>部分类型基于语义推断，鼠标悬停可查看推断依据</em></div>';
-    }
-  } else {
-    paramHtml = '<p style="color:var(--color-text-secondary)">无参数</p>';
-  }
-
-  let returnHtml = parsed.returnTypeInferred
-    ? inferredSpan(parsed.returnType, parsed.returnTypeInferReason || 'AI推断')
-    : '<span class="badge ' + langBadge + '">' + escapeHtml(parsed.returnType) + '</span>';
-
-  let depHtml = parsed.dependencies.length > 0
-    ? '<ul class="dep-list">' + parsed.dependencies.map(function(d) { return '<li>' + escapeHtml(d) + '</li>'; }).join('') + '</ul>'
-    : '<p style="color:var(--color-text-secondary)">无外部依赖</p>';
-
-  const tryBadge = parsed.hasTryCatch
-    ? '<span class="badge badge-try">包含异常处理</span>'
-    : '<span class="badge badge-no-try">未检测到异常处理</span>';
-
-  // 语句级解释
-  var stmtExplanations = generateStatementExplanation(parsed.rawCode, lang);
-  var explanationHtml = '';
-  if (stmtExplanations.length > 0) {
-    explanationHtml = '<div class="spec-section">' +
-      '<div class="spec-label">代码说明</div>' +
-      stmtExplanations.map(function(e) { return '<p style="font-size:var(--text-sm);color:var(--color-text-primary);line-height:1.8;margin-bottom:var(--space-1)">' + escapeHtml(e) + '</p>'; }).join('') +
-    '</div>';
-  }
-
-  return '' +
-    '<div class="spec-section">' +
-      '<div class="spec-label">函数签名</div>' +
-      '<div class="spec-signature">' + signature + '</div>' +
-      '<div class="insight-line">' + escapeHtml(insight) + '</div>' +
-    '</div>' +
-    explanationHtml +
-    '<div class="spec-section">' +
-      '<div class="spec-label">参数列表</div>' + paramHtml +
-    '</div>' +
-    '<div class="spec-section">' +
-      '<div class="spec-label">返回值</div>' +
-      '<p>' + returnHtml + '</p>' +
-    '</div>' +
-    '<div class="spec-section">' +
-      '<div class="spec-label">依赖</div>' + depHtml +
-    '</div>' +
-    '<div class="spec-section">' +
-      '<div class="spec-label">异常处理</div>' + tryBadge +
-    '</div>';
+  document.getElementById('badgeWall').innerHTML=bh;
 }
 
-function renderBeginnerSpec(parsed, lang, matchResult) {
-  return '<div class="spec-section">' + generateNarrativeBeginnerDoc(parsed, lang, matchResult) + '</div>';
+function fillHistoryByIdx(idx){
+  var h=appStats.history[idx];
+  if(!h)return;
+  document.getElementById('codeInput').value=h.code;
+  document.getElementById('langSelect').value=h.language||'java';
+  document.getElementById('parseBtn').click();
 }
 
-/* ==================== 主控制器 ==================== */
-
-let lastParsed = null, lastLang = 'java', lastMatchResult = null;
-
-function showToast(msg) {
-  const toast = document.getElementById('toast');
-  toast.textContent = msg;
-  toast.classList.add('show');
-  setTimeout(function() { toast.classList.remove('show'); }, 2200);
+function scrollToSection(section){
+  var map={top:'sectionTop',core:'sectionCore',bottom:'sectionBottom'};
+  var id=map[section];
+  if(id){var el=document.getElementById(id);if(el)el.scrollIntoView({behavior:'smooth',block:'start'})}
+  document.querySelectorAll('.nav-item').forEach(function(n){n.classList.remove('active')});
+  var nav=document.querySelector('.nav-item[data-nav="'+(section==='top'?'dashboard':section==='core'?'doc':'badges')+'"]');
+  if(nav)nav.classList.add('active');
 }
 
-function doParse() {
-  const codeInput = document.getElementById('codeInput');
-  const errorToast = document.getElementById('errorToast');
-  const loadingOverlay = document.getElementById('loadingOverlay');
-  const lang = document.getElementById('langSelect').value;
-  const code = codeInput.value;
-
-  if (!code.trim()) {
-    errorToast.textContent = '代码的意图尚不明朗，请先粘贴一段代码再试。';
-    errorToast.classList.add('active');
-    return;
-  }
-  errorToast.classList.remove('active');
-  loadingOverlay.classList.add('active');
-
-  setTimeout(function() {
-    try {
-      let parsed = lang === 'java' ? parseJava(code) : parsePython(code);
-      lastParsed = parsed;
-      lastLang = lang;
-      lastMatchResult = matchMetaphorEntry(code, parsed);
-
-      const techContent = document.getElementById('techContent');
-      document.getElementById('techEmpty').style.display = 'none';
-      techContent.innerHTML = renderTechSpec(parsed, lang);
-      techContent.style.display = 'block';
-
-      const beginnerContent = document.getElementById('beginnerContent');
-      document.getElementById('beginnerEmpty').style.display = 'none';
-      beginnerContent.innerHTML = renderBeginnerSpec(parsed, lang, lastMatchResult);
-      beginnerContent.style.display = 'block';
-
-      if (typeof Prism !== 'undefined') Prism.highlightAll();
-    } catch (err) {
-      errorToast.textContent = '代码的意图尚不明朗，请检查输入是否为有效的 Java / Python 函数。';
-      errorToast.classList.add('active');
-      console.error(err);
-    } finally {
-      loadingOverlay.classList.remove('active');
-    }
-  }, 150);
+function openModal(){
+  var uk=Object.keys(appStats.metaphorHits).length;
+  var c='<div class="modal-stat-row"><span>总解析次数</span><span class="modal-stat-val">'+appStats.total+'</span></div>';
+  c+='<div class="modal-stat-row"><span>Java 解析</span><span class="modal-stat-val">'+appStats.javaCount+'</span></div>';
+  c+='<div class="modal-stat-row"><span>Python 解析</span><span class="modal-stat-val">'+appStats.pythonCount+'</span></div>';
+  c+='<div class="modal-stat-row"><span>平均耗时</span><span class="modal-stat-val">'+appStats.avgTime+' ms</span></div>';
+  c+='<div class="modal-stat-row"><span>比喻关键词数</span><span class="modal-stat-val">'+uk+'</span></div>';
+  c+='<div class="modal-stat-row"><span>模式种类</span><span class="modal-stat-val">'+Object.keys(appStats.patternStats).length+'</span></div>';
+  c+='<div class="modal-stat-row"><span>历史记录</span><span class="modal-stat-val">'+appStats.history.length+'</span></div>';
+  c+='<div class="modal-stat-row"><span>夜猫子模式</span><span class="modal-stat-val">'+(appStats.nightOwl?'已触发':'未触发')+'</span></div>';
+  document.getElementById('modalStatsContent').innerHTML=c;
+  document.getElementById('statsModal').classList.add('show');
 }
 
-function copySpec(type) {
-  if (!lastParsed) { showToast('请先解析代码后再复制'); return; }
-  let text = '';
-  const pd = lastParsed.parameters.map(function(p) { return p.type + ' ' + p.name; }).join(', ');
-  const langLabel = lastLang === 'java' ? 'Java' : 'Python';
-  if (type === 'tech') {
-    const sig = lastLang === 'java'
-      ? lastParsed.returnType + ' ' + lastParsed.methodName + '(' + pd + ')'
-      : 'def ' + lastParsed.methodName + '(' + pd + ')' + (lastParsed.returnType && lastParsed.returnType !== 'void' && lastParsed.returnType !== 'None' ? ' -> ' + lastParsed.returnType : '');
-    text = '=== 技术版说明书 (' + langLabel + ') ===\n\n[函数签名]\n' + sig + '\n\n[参数列表]\n';
-    if (lastParsed.parameters.length > 0) {
-      lastParsed.parameters.forEach(function(p, i) { text += '  ' + (i + 1) + '. ' + p.name + ' : ' + p.type + (p.typeInferred ? ' (推断)' : '') + '\n'; });
-    } else { text += '  (无参数)\n'; }
-    text += '\n[返回值]\n' + (lastParsed.returnType || 'void') + (lastParsed.returnTypeInferred ? ' (推断)' : '') + '\n\n[依赖]\n';
-    if (lastParsed.dependencies.length > 0) lastParsed.dependencies.forEach(function(d) { text += '  - ' + d + '\n'; });
-    else text += '  (无外部依赖)\n';
-    text += '\n[异常处理]\n' + (lastParsed.hasTryCatch ? '包含 try-catch/except' : '未检测到异常处理') + '\n';
-    text += '\n[设计洞察]\n' + generateInsight(lastParsed, lastParsed.rawCode) + '\n';
-  } else {
-    text = '=== 小白版说明书 (' + langLabel + ') ===\n\n';
-    const narrativeDiv = document.createElement('div');
-    narrativeDiv.innerHTML = generateNarrativeBeginnerDoc(lastParsed, lastLang, lastMatchResult);
-    text += narrativeDiv.textContent.trim() + '\n';
-  }
-  if (navigator.clipboard && navigator.clipboard.writeText) {
-    navigator.clipboard.writeText(text).then(function() { showToast('已复制到剪贴板'); }).catch(function() { fallbackCopy(text); });
-  } else { fallbackCopy(text); }
+function closeModal(){document.getElementById('statsModal').classList.remove('show')}
+
+document.getElementById('statsModal').addEventListener('click',function(e){if(e.target===this)closeModal()});
+
+function showToast(msg){
+  var t=document.createElement('div');t.className='toast';t.textContent=msg;
+  document.body.appendChild(t);setTimeout(function(){t.remove()},2500);
 }
 
-function fallbackCopy(text) {
-  const ta = document.createElement('textarea');
-  ta.value = text;
-  ta.style.position = 'fixed'; ta.style.left = '-9999px';
-  document.body.appendChild(ta);
-  ta.select();
-  document.execCommand('copy');
-  document.body.removeChild(ta);
-  showToast('已复制到剪贴板');
+// ==================== 渲染说明书 ====================
+function renderTechDoc(parsed,lang){
+  var paramsDisplay=parsed.parameters.map(function(p){return p.type+' '+p.name}).join(', ');
+  var sig=lang==='java'?parsed.returnType+' '+parsed.methodName+'('+paramsDisplay+')':'def '+parsed.methodName+'('+paramsDisplay+')'+(parsed.returnType&&parsed.returnType!=='void'?' -> '+parsed.returnType:'');
+  var stmtEx=generateStatementExplanation(parsed.rawCode,lang);
+  var health=calculateHealthScore(parsed.rawCode,parsed.parameters);
+  var hhtml='<div class="detail-section"><h4>代码健康度</h4><div style="display:flex;align-items:center;gap:12px"><span style="font-size:28px;font-weight:700;color:'+(health.level==='good'?'var(--success)':health.level==='warn'?'var(--warning)':'var(--error)')+'">'+health.score+'</span><span style="font-size:12px;color:var(--text2)">'+(health.level==='good'?'健康':health.level==='warn'?'一般':'需优化')+'</span></div><div class="health-bar-track"><div class="health-bar-fill '+health.level+'" style="width:'+health.score+'%"></div></div>';
+  if(health.deductions.length>0){hhtml+='<div class="health-metrics">';for(var d=0;d<health.deductions.length;d++)hhtml+='<span>'+health.deductions[d].label+': '+health.deductions[d].value+'</span>';hhtml+='</div>'}
+  hhtml+='</div>';
+  var ehtml='';
+  if(stmtEx.length>0){ehtml='<div class="detail-section"><h4>代码说明</h4>';for(var si=0;si<stmtEx.length;si++)ehtml+='<p style="margin-bottom:4px">'+escapeHtml(stmtEx[si])+'</p>';ehtml+='</div>'}
+  var html='<div class="detail-section"><h4>函数签名</h4><pre>'+escapeHtml(sig)+'</pre></div>'+hhtml+ehtml;
+  html+='<div class="detail-section"><h4>参数列表</h4><table><tr><th>#</th><th>参数名</th><th>类型</th></tr>';
+  if(parsed.parameters.length>0)for(var pi=0;pi<parsed.parameters.length;pi++)html+='<tr><td>'+(pi+1)+'</td><td><code>'+escapeHtml(parsed.parameters[pi].name)+'</code></td><td>'+escapeHtml(parsed.parameters[pi].type)+'</td></tr>';
+  else html+='<tr><td colspan="3">无参数</td></tr>';
+  html+='</table></div>';
+  html+='<div class="detail-section"><h4>返回值</h4><p>'+escapeHtml(parsed.returnType||'void')+'</p></div>';
+  html+='<div class="detail-section"><h4>依赖</h4><ul>'+(parsed.dependencies.length>0?parsed.dependencies.map(function(d){return'<li>'+escapeHtml(d)+'</li>'}).join(''):'<li>无外部依赖</li>')+'</ul></div>';
+  html+='<div class="detail-section"><h4>异常处理</h4><p>'+(parsed.hasTryCatch?'包含 try-catch/except':'未检测到异常处理')+'</p></div>';
+  document.getElementById('techDoc').innerHTML=html;
+  document.getElementById('techDoc').style.display='block';
+  document.getElementById('beginnerDoc').style.display='none';
 }
 
-function exportCard() {
-  if (!lastParsed) { showToast('请先解析代码后再导出'); return; }
-  if (typeof html2canvas === 'undefined') { showToast('html2canvas 还未加载，请稍后再试'); return; }
-  const panel = document.getElementById('outputPanel');
-  html2canvas(panel, { scale: 2, backgroundColor: '#ffffff' }).then(function(canvas) {
-    const link = document.createElement('a');
-    link.download = '代码解释_' + lastParsed.methodName + '.png';
-    link.href = canvas.toDataURL('image/png');
-    link.click();
-    showToast('分享卡片已导出');
-  }).catch(function(err) { console.error(err); showToast('导出失败，请重试'); });
+function renderBeginnerDoc(parsed,lang,matchResult){
+  var entry=matchResult.entry,name=parsed.methodName,langName=lang==='java'?'Java':'Python',lineCount=parsed.rawCode.split('\n').length;
+  var paramDesc=parsed.parameters.length===0?'不需要额外输入':parsed.parameters.map(function(p){return p.name}).join('、');
+  var opening='<strong>这个函数就像是在'+escapeHtml(entry.metaphor)+'。</strong>';
+  var body=matchResult.matchQuality==='strong'?'当你把'+escapeHtml(entry.inputDesc)+'交给它，它会'+escapeHtml(entry.action)+'。传给它的数据是'+paramDesc+'，最终得到的是'+escapeHtml(entry.outputDesc)+'。':'简单来说，它做的事情就是'+escapeHtml(entry.action)+'。传入'+paramDesc+'，处理后返回结果。';
+  var stmtEx=generateStatementExplanation(parsed.rawCode,lang);
+  var bs='';if(stmtEx.length>0){bs='具体来说，'+stmtEx.map(function(e){return e.replace(/。$/,'')}).join('；')+'。'}
+  var extra='';if(parsed.dependencies.length>0)extra+='它借用了'+parsed.dependencies.length+'个外部工具：'+parsed.dependencies.slice(0,3).map(escapeHtml).join('、')+'。';
+  if(parsed.hasTryCatch)extra+='内置了错误防护，出问题不会崩溃。';
+  var meta=langName+' 代码片段 &middot; '+lineCount+' 行';
+  var html='<div class="narrative-box"><p style="margin-bottom:12px">'+opening+'</p><p style="margin-bottom:12px">'+body+'</p>'+(bs?'<p style="margin-bottom:12px">'+bs+'</p>':'')+(extra?'<p style="margin-bottom:12px;color:var(--text2);font-size:12px">'+extra+'</p>':'')+'</div><p style="margin-top:8px;font-size:11px;color:var(--text2)">'+meta+'</p>';
+  document.getElementById('beginnerDoc').innerHTML=html;
+  document.getElementById('techDoc').style.display='none';
+  document.getElementById('beginnerDoc').style.display='block';
 }
 
-function switchTab(target) {
-  document.querySelectorAll('.tab-btn').forEach(function(b) { b.classList.remove('active'); });
-  document.querySelector('.tab-btn[data-tab="' + target + '"]').classList.add('active');
-  document.querySelectorAll('.tab-content').forEach(function(c) { c.classList.remove('active'); });
-  document.getElementById(target + 'Tab').classList.add('active');
-}
-
-document.addEventListener('DOMContentLoaded', function() {
-  document.getElementById('parseBtn').addEventListener('click', doParse);
-  document.getElementById('codeInput').addEventListener('keydown', function(e) {
-    if ((e.ctrlKey || e.metaKey) && e.key === 'Enter') { e.preventDefault(); doParse(); }
-    document.getElementById('errorToast').classList.remove('active');
-  });
-  document.getElementById('copyTechBtn').addEventListener('click', function() { copySpec('tech'); });
-  document.getElementById('copyBeginnerBtn').addEventListener('click', function() { copySpec('beginner'); });
-  document.getElementById('exportBtn').addEventListener('click', exportCard);
-  document.querySelectorAll('.tab-btn').forEach(function(btn) {
-    btn.addEventListener('click', function() { switchTab(this.dataset.tab); });
-  });
-  document.getElementById('langSelect').addEventListener('change', function() {
-    console.log('Switched to ' + (this.value === 'java' ? 'Java' : 'Python'));
-  });
-  if (typeof Prism !== 'undefined') Prism.highlightAll();
-  console.log('代码解释器已启动');
+// ==================== 事件绑定 ====================
+document.getElementById('parseBtn').addEventListener('click',function(){
+  var code=document.getElementById('codeInput').value.trim();
+  if(!code){showToast('请先粘贴代码');return}
+  var lang=document.getElementById('langSelect').value;
+  var loading=document.getElementById('loadingIndicator');
+  loading.style.display='block';
+  var start=performance.now();
+  setTimeout(function(){
+    try{
+      var parsed=lang==='java'?parseJava(code):parsePython(code);
+      var match=matchMetaphorEntry(code,parsed);
+      var patterns=detectPatterns(parsed,code);
+      renderTechDoc(parsed,lang);
+      renderBeginnerDoc(parsed,lang,match);
+      var duration=Math.round(performance.now()-start);
+      recordParse(lang,duration,code,match.firstKeyword,patterns);
+      if(typeof Prism!=='undefined')Prism.highlightAll();
+    }catch(e){
+      document.getElementById('techDoc').innerHTML='<div style="color:var(--error)">代码的意图尚不明朗，请检查输入</div>';
+      document.getElementById('beginnerDoc').innerHTML='<div style="color:var(--error)">无法生成解释</div>';
+    }finally{loading.style.display='none'}
+  },150);
 });
-</script>
 
+document.getElementById('copyTechBtn').addEventListener('click',function(){
+  var txt=document.getElementById('techDoc').innerText;
+  if(navigator.clipboard)navigator.clipboard.writeText(txt).then(function(){showToast('技术版已复制')}).catch(function(){
+    var ta=document.createElement('textarea');ta.value=txt;ta.style.position='fixed';ta.style.left='-9999px';document.body.appendChild(ta);ta.select();document.execCommand('copy');document.body.removeChild(ta);showToast('技术版已复制');
+  });
+});
+
+document.getElementById('exportImgBtn').addEventListener('click',function(){
+  var doc=document.getElementById('techDoc');
+  if(typeof html2canvas==='undefined'){showToast('请稍候再试');return}
+  html2canvas(doc,{scale:2,backgroundColor:'#0A0F1A'}).then(function(c){
+    var a=document.createElement('a');a.download='code_doc.png';a.href=c.toDataURL();a.click();showToast('卡片已导出');
+  }).catch(function(){showToast('导出失败')});
+});
+
+document.getElementById('fullStatsBtn').addEventListener('click',openModal);
+
+document.getElementById('logoutBtn').addEventListener('click',function(){
+  localStorage.removeItem('codeDocStats');location.reload();
+});
+
+document.querySelectorAll('.tab').forEach(function(tab){
+  tab.addEventListener('click',function(){
+    document.querySelectorAll('.tab').forEach(function(t){t.classList.remove('active')});
+    tab.classList.add('active');
+    if(tab.dataset.tab==='tech'){document.getElementById('techDoc').style.display='block';document.getElementById('beginnerDoc').style.display='none'}
+    else{document.getElementById('techDoc').style.display='none';document.getElementById('beginnerDoc').style.display='block'}
+  });
+});
+
+document.getElementById('langSelect').addEventListener('change',function(){
+  console.log('Switched to '+(this.value==='java'?'Java':'Python'));
+});
+
+document.getElementById('codeInput').addEventListener('keydown',function(e){
+  if((e.ctrlKey||e.metaKey)&&e.key==='Enter'){e.preventDefault();document.getElementById('parseBtn').click()}
+});
+
+loadStats();
+if(typeof Prism!=='undefined')Prism.highlightAll();
+console.log('代码解释器 v3.0 已启动');
+</script>
 </body>
 </html>
