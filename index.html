@@ -4,36 +4,45 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
 <title>代码解释器 · 智能说明书仪表板</title>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/themes/prism-tomorrow.min.css">
 <script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/prism.min.js"></script>
-<script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/components/prism-java.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/components/prism-python.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
 <style>
 :root {
-  --bg-deep: #0B0E17;
-  --surface: #111827;
-  --surface2: #0F1222;
-  --border: #1F2A44;
-  --text: #F0F3FA;
-  --text2: #8B9DC3;
-  --accent: #3B82F6;
-  --accent2: #60A5FA;
-  --success: #34D399;
-  --error: #F87171;
+  --bg-deep: #F8FAFC; /* 页面背景（浅） */
+  --surface: #FFFFFF; /* 卡片 / 面板 */
+  --surface2: #F7FBFF; /* 次级面板 / 区块 */
+  --border: #E2EDF8; /* 轻微边框 */
+  --text: #0F172A; /* 主文本 */
+  --text2: #64748B; /* 次要文本 */
+  --accent: #3B82F6; /* 主色：浅蓝 */
+  --accent2: #10B981; /* 辅助：薄荷绿 */
+  --success: #10B981;
+  --error: #EF4444;
   --warning: #F59E0B;
-  --radius: 16px;
+  --radius: 12px;
+  --page-padding: 24px;
+  --card-padding-vertical: 16px;
+  --card-padding-horizontal: 20px;
+  --gap: 20px;
+  --card-title-color: #475569;
+  --code-color: #1E293B;
+  --anim-speed: 0.18s; /* 默认动画时长，可配置 */
 }
 *{margin:0;padding:0;box-sizing:border-box}
 body{
   background:var(--bg-deep);
   font-family:'Inter',-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;
-  color:var(--text);line-height:1.5;
+  color:var(--text);line-height:1.5;font-size:14px;
 }
 .dashboard{display:flex;min-height:100vh}
+.dashboard{position:relative;z-index:1}
 .sidebar{
   width:260px;background:var(--surface2);border-right:1px solid var(--border);
   padding:24px 20px;display:flex;flex-direction:column;gap:24px;flex-shrink:0;
+  position:fixed;left:0;top:0;bottom:0;z-index:50;
 }
 .profile{text-align:center;border-bottom:1px solid var(--border);padding-bottom:20px}
 .avatar{
@@ -49,58 +58,123 @@ body{
 .nav-item.active{background:rgba(59,130,246,0.12);color:#fff}
 .nav-item .nav-icon{font-size:18px}
 .nav-footer{margin-top:auto;font-size:11px;color:#4B5563}
-.main{flex:1;padding:24px 28px 24px 24px;overflow-x:auto}
+.main{flex:1;padding:24px 28px 24px 24px;overflow-x:auto;margin-left:260px;height:100vh;overflow-y:auto}
 .top-bar{display:flex;justify-content:space-between;align-items:center;margin-bottom:24px;flex-wrap:wrap;gap:12px}
-.dashboard-title h1{font-size:26px;font-weight:700}
-.dashboard-title p{color:var(--text2);font-size:13px}
+.dashboard-title h1{font-size:1.5rem;font-weight:700}
+.dashboard-title p{color:var(--text2);font-size:0.9rem}
 .activity-badge{
   background:var(--surface);padding:8px 16px;border-radius:32px;
   font-size:13px;display:flex;align-items:center;gap:8px;border:1px solid var(--border);
 }
+/* 便当盒网格 */
+.bento-grid{margin-bottom:12px}
+.bento-card{background:var(--surface);padding:var(--card-padding-vertical) var(--card-padding-horizontal);border-radius:12px;border:1px solid var(--border);box-shadow:0 4px 12px rgba(16,24,40,0.03)}
+.bento-card .card-title{font-weight:600;color:var(--card-title-color);margin-bottom:8px}
+.bento-card .card-value{font-size:20px;font-weight:700}
+.sparkline{width:100%;height:48px}
+.bento-mini{display:flex;justify-content:space-between;align-items:center;gap:8px}
+
+/* Onboarding 覆盖层 */
+.onboard-overlay{position:fixed;left:0;top:0;right:0;bottom:0;background:rgba(7,16,33,0.55);display:flex;align-items:center;justify-content:center;z-index:9999}
+.onboard-modal{background:var(--surface);padding:20px;border-radius:12px;max-width:720px;width:92%;color:var(--text);box-shadow:0 10px 40px rgba(2,6,23,0.3)}
+.onboard-steps{display:flex;gap:12px;margin:12px 0}
+.onboard-step{flex:1;padding:12px;border-radius:8px;background:var(--surface2);border:1px solid var(--border)}
+.onboard-actions{display:flex;justify-content:flex-end;gap:8px;margin-top:12px}
+
+/* Practice area larger adjustments */
+.practice-center .insight-card{max-width:1200px}
+.practice-center textarea{font-size:13px}
+/* 小屏侧栏抽屉开关按钮 */
+.sidebar-toggle-btn{display:none;margin-right:8px}
 .activity-badge select{
-  background:transparent;border:none;color:#fff;outline:none;font-size:13px;font-family:inherit;cursor:pointer;
+  background:transparent;border:none;color:var(--text);outline:none;font-size:0.9rem;font-family:inherit;cursor:pointer;
 }
 
-.stats-row{display:grid;grid-template-columns:repeat(4,1fr);gap:16px;margin-bottom:24px}
+.stats-row{display:grid;grid-template-columns:repeat(4,1fr);gap:var(--gap);margin-bottom:32px}
 @media(max-width:900px){.stats-row{grid-template-columns:repeat(2,1fr)}}
 .stat-card{
   background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);
-  padding:18px 20px;
+  padding:var(--card-padding-vertical) var(--card-padding-horizontal);
 }
-.stat-label{font-size:11px;text-transform:uppercase;letter-spacing:1px;color:var(--text2)}
-.stat-value{font-size:32px;font-weight:700;margin-top:8px;color:var(--text)}
-.stat-unit{font-size:14px;font-weight:400;color:var(--text2)}
+.stat-label{font-size:0.7rem;text-transform:uppercase;letter-spacing:1px;color:var(--text2)}
+.stat-value{font-size:1.75rem;font-weight:700;margin-top:8px;color:var(--text)}
+.stat-unit{font-size:0.85rem;font-weight:400;color:var(--text2)}
 .stat-trend{font-size:11px;margin-top:4px;font-weight:500}
 .stat-trend.up{color:var(--success)}
 .stat-trend.neutral{color:var(--text2)}
 .stat-trend.new{color:var(--accent2)}
 
-.core-grid{display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-bottom:24px}
+.core-grid{display:grid;grid-template-columns:40% 60%;gap:var(--gap);margin-bottom:32px}
 @media(max-width:1000px){.core-grid{grid-template-columns:1fr}.sidebar{display:none}}
+@media(max-width:1000px){.main{margin-left:0;height:auto;overflow-y:visible}}
+.overlay-backdrop{display:none}
+body.sidebar-open .overlay-backdrop{display:block;position:fixed;inset:0;background:rgba(0,0,0,0.5);z-index:40}
+@media(max-width:1000px){
+  .sidebar{left:-320px;display:block;transition:left .28s ease;position:fixed;top:0;bottom:0;z-index:50}
+  body.sidebar-open .sidebar{left:0;box-shadow:0 12px 40px rgba(2,6,23,0.24)}
+  .sidebar-toggle-btn{display:inline-flex}
+}
 .code-panel,.doc-panel{
   background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);
   overflow:hidden;display:flex;flex-direction:column;
 }
 .panel-header{
-  padding:14px 18px;background:rgba(15,23,42,0.6);border-bottom:1px solid var(--border);
+  padding:14px 18px;background:rgba(15,23,42,0.04);border-bottom:1px solid var(--border);
   font-weight:600;font-size:14px;display:flex;justify-content:space-between;flex-wrap:wrap;gap:8px;
 }
 .code-input{
   width:100%;min-height:300px;padding:16px;
-  font-family:'Fira Code','Cascadia Code',Consolas,monospace;font-size:13px;
-  background:#0A0F1A;border:none;color:#E2E8F0;resize:vertical;outline:none;line-height:1.7;tab-size:4;
+  font-family:'Fira Code','Cascadia Code',Consolas,monospace;font-size:0.85rem;
+  background:var(--surface2);border:none;color:var(--code-color);resize:vertical;outline:none;line-height:1.7;tab-size:4;
 }
-.code-input::placeholder{color:#4B5563}
+.code-input.pulse-highlight{box-shadow:0 8px 24px rgba(59,130,246,0.12);border-radius:8px;transition:box-shadow .3s ease}
+.code-input::placeholder{color:var(--text2)}
 .btn-group{display:flex;gap:8px;flex-wrap:wrap}
 .btn{
-  background:var(--border);border:none;color:var(--text);padding:7px 14px;
-  border-radius:32px;cursor:pointer;font-size:12px;font-weight:500;transition:all .2s;
-  display:inline-flex;align-items:center;gap:6px;font-family:inherit;
+  background:var(--border);border:none;color:var(--text);padding:10px 16px;
+  border-radius:32px;cursor:pointer;font-size:13px;font-weight:600;transition:all var(--anim-speed) ease;display:inline-flex;
+  align-items:center;gap:8px;font-family:inherit;transform-origin:center;will-change:transform;min-height:44px;padding-top:10px;padding-bottom:10px;
 }
-.btn-primary{background:var(--accent);color:#fff}.btn-primary:hover{background:#2563eb}
-.btn:hover{background:#2D3A5E}
+.btn-primary{background:var(--accent);color:#fff}
+.btn:hover{transform:scale(1.02)}
 
-.tabs{display:flex;border-bottom:1px solid var(--border);background:rgba(15,23,42,0.6)}
+/* 可访问性焦点样式 */
+.btn:focus{outline:3px solid rgba(59,130,246,0.18);outline-offset:2px}
+
+/* 触控优化：小屏更大触控面积 */
+@media(max-width:600px){
+  .btn{min-height:52px;padding-top:12px;padding-bottom:12px;font-size:15px}
+  .panel-header{padding:12px}
+}
+
+/* 孟菲斯装饰层 */
+.memphis{position:absolute;inset:0;pointer-events:none;z-index:0}
+.memphis-dot{position:absolute;border-radius:50%;opacity:0.12;transform:scale(1);transition:transform var(--anim-speed) cubic-bezier(.2,.9,.2,1),opacity var(--anim-speed)}
+.memphis-dot.pop{transform:scale(1.12);opacity:0.2}
+
+/* Practice 居中与隐藏次要卡 */
+#panelPractice .practice-center{max-width:900px;margin:8px auto 24px;display:flex;align-items:center;min-height:calc(100vh - 200px);justify-content:center}
+#panelPractice .practice-center .insight-card{width:75%;}
+#panelPractice .insight-card.extra{display:none}
+
+/* Center page-inner and constrain width */
+.page-inner{max-width:1100px;width:100%;margin:0 auto}
+
+/* Button style unification */
+.btn{background:var(--border);border:none;color:var(--text);padding:10px 14px;border-radius:12px;cursor:pointer;font-size:13px;font-weight:600;transition:all var(--anim-speed) ease;display:inline-flex;align-items:center;gap:8px}
+.btn-primary{background:var(--accent);color:#fff;padding:12px 18px;border-radius:12px}
+.btn:focus{outline:3px solid rgba(59,130,246,0.18);outline-offset:2px}
+
+/* 减少动画偏好支持 */
+@media(prefers-reduced-motion:reduce){
+  .btn,.health-bar-fill,.memphis-dot{transition:none;animation:none}
+}
+
+/* 主 CTA 突出样式 */
+.btn-primary{padding:14px 20px;font-size:1rem;border-radius:12px;box-shadow:0 6px 18px rgba(59,130,246,0.12)}
+.btn-primary:active{transform:scale(0.995)}
+
+.tabs{display:flex;border-bottom:1px solid var(--border);background:transparent}
 .tab{
   flex:1;padding:12px;background:transparent;border:none;color:var(--text2);
   font-weight:500;font-size:13px;cursor:pointer;font-family:inherit;transition:all .2s;
@@ -108,16 +182,16 @@ body{
 .tab.active{color:#fff;border-bottom:2px solid var(--accent);background:var(--surface)}
 .doc-content{
   padding:18px;min-height:300px;max-height:420px;overflow-y:auto;
-  font-size:13px;background:#0A0F1A;line-height:1.7;
+  font-size:0.85rem;background:var(--surface2);line-height:1.7;color:var(--text);
 }
 
-.insight-row{display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-bottom:24px}
+.insight-row{display:grid;grid-template-columns:1fr 1fr;gap:var(--gap);margin-bottom:32px}
 @media(max-width:900px){.insight-row{grid-template-columns:1fr}}
 .insight-card{
   background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:16px 18px;
 }
 .card-title{
-  font-size:11px;text-transform:uppercase;letter-spacing:1px;color:var(--text2);
+  font-size:0.9rem;font-weight:600;color:var(--card-title-color);
   margin-bottom:12px;display:flex;align-items:center;gap:8px;
 }
 .performer-list p,.channel-list p{
@@ -129,8 +203,10 @@ body{
 @media(max-width:900px){.bottom-grid{grid-template-columns:1fr}}
 .badge-wall{display:grid;grid-template-columns:repeat(2,1fr);gap:10px}
 .badge-item{background:rgba(30,41,59,0.6);border-radius:14px;padding:12px;text-align:center;transition:opacity .2s;border:1px solid transparent}
-.badge-item.unlocked{background:rgba(59,130,246,0.1);border-color:var(--accent)}
-.badge-item.locked{opacity:.45}
+.badge-item{position:relative}
+.badge-item.unlocked{background:rgba(59,130,246,0.06);border-color:transparent}
+.badge-item.locked{filter:grayscale(1);opacity:1}
+.badge-item .badge-lock{position:absolute;right:8px;top:8px;font-size:12px;color:var(--text2)}
 .badge-icon{font-size:22px;margin-bottom:4px}
 .badge-name{font-size:12px;font-weight:600;margin-bottom:4px}
 .badge-progress{font-size:11px;color:var(--text2);margin-top:2px}
@@ -152,17 +228,17 @@ body{
 .detail-section{margin-bottom:18px}
 .detail-section h4{font-size:11px;text-transform:uppercase;letter-spacing:1px;color:var(--accent2);margin-bottom:8px}
 .detail-section pre{
-  background:rgba(0,0,0,.3);padding:10px 14px;border-radius:8px;font-size:13px;
-  font-family:'Fira Code',monospace;overflow-x:auto;white-space:pre-wrap;line-height:1.6;
+  background:rgba(15,23,42,0.04);padding:10px 14px;border-radius:8px;font-size:13px;
+  font-family:'Fira Code',monospace;overflow-x:auto;white-space:pre-wrap;line-height:1.6;color:var(--text);
 }
 .detail-section table{width:100%;border-collapse:collapse;margin:8px 0}
-.detail-section th,.detail-section td{border:1px solid var(--border);padding:7px 10px;text-align:left;font-size:12px}
-.detail-section th{background:rgba(15,23,42,0.6);color:var(--text2)}
+.detail-section th,.detail-section td{border:1px solid var(--border);padding:10px 12px;text-align:left;font-size:0.85rem}
+.detail-section th{background:rgba(15,23,42,0.02);color:var(--text2)}
 .detail-section ul{padding-left:16px;font-size:12px}
 
 .narrative-box{
   background:rgba(59,130,246,0.06);border-left:3px solid var(--accent);
-  border-radius:0 12px 12px 0;padding:16px 18px;line-height:1.9;font-size:13px;
+  border-radius:0 12px 12px 0;padding:16px 18px;line-height:1.9;font-size:13px;color:var(--text);
 }
 
 .health-bar-track{height:6px;background:rgba(255,255,255,.08);border-radius:3px;overflow:hidden;margin:10px 0}
@@ -203,6 +279,24 @@ body{
   </div>
 </div>
 
+<!-- AI 配置 Modal (session 存储 API Key) -->
+<div class="modal-overlay" id="aiModal">
+  <div class="modal-box">
+    <div style="display:flex;justify-content:space-between;align-items:center">
+      <h2 style="margin-bottom:0">AI 配置</h2>
+      <button class="modal-close" onclick="closeAIModal()">&times;</button>
+    </div>
+    <div style="margin-top:12px">
+      <label style="font-size:13px;display:block;margin-bottom:8px">API Key（仅会话存储，刷新后清除）</label>
+      <input id="aiApiKeyInput" type="password" style="width:100%;padding:10px;border:1px solid var(--border);border-radius:8px;background:var(--surface)" placeholder="输入 API Key（可留空）">
+      <div style="display:flex;gap:8px;margin-top:12px;justify-content:flex-end">
+        <button class="btn" onclick="clearAIApiKey()">清除</button>
+        <button class="btn btn-primary" onclick="saveAIApiKey()">保存</button>
+      </div>
+    </div>
+  </div>
+</div>
+
 <div class="dashboard">
   <div class="sidebar">
     <div class="profile">
@@ -210,45 +304,63 @@ body{
       <h3>代码解释器</h3>
       <p>智能说明书 · 本地解析</p>
     </div>
-    <div class="nav-item active" data-nav="dashboard" onclick="scrollToSection('top')"><span class="nav-icon">&#x25A0;</span> 仪表盘</div>
-    <div class="nav-item" data-nav="doc" onclick="scrollToSection('core')"><span class="nav-icon">&#x25A0;</span> 说明书</div>
-    <div class="nav-item" data-nav="badges" onclick="scrollToSection('bottom')"><span class="nav-icon">&#x25A0;</span> 成就</div>
+    <div class="nav-item active" data-nav="dashboard" onclick="switchPanel('dashboard')"><span class="nav-icon">&#x25A0;</span> 仪表盘</div>
+    <div class="nav-item" data-nav="doc" onclick="switchPanel('doc')"><span class="nav-icon">&#x25A0;</span> 说明书</div>
+    <div class="nav-item" data-nav="practice" onclick="switchPanel('practice')"><span class="nav-icon">&#x25A0;</span> 代码练习</div>
+    <div class="nav-item" data-nav="history" onclick="switchPanel('history')"><span class="nav-icon">&#x25A0;</span> 历史记录</div>
+    <div class="nav-item" data-nav="badges" onclick="switchPanel('badges')"><span class="nav-icon">&#x25A0;</span> 成就</div>
     <div class="nav-footer">v3.0 · 无后端 · 纯前端</div>
   </div>
 
+  <div id="overlayBackdrop" class="overlay-backdrop" onclick="closeSidebar()"></div>
+
   <div class="main">
+    <div class="page-inner">
     <div class="top-bar">
       <div class="dashboard-title">
         <h1>Dashboard</h1>
         <p>代码解析统计与智能说明书仪表板</p>
       </div>
-      <div class="activity-badge">
-        <span>&#x25CF; Activity</span>
-        <select id="langSelect">
-          <option value="java">Java</option>
-          <option value="python">Python</option>
-        </select>
+      <div style="display:flex;align-items:center;gap:8px">
+        <button id="sidebarToggle" class="btn sidebar-toggle-btn" aria-label="Toggle menu">&#9776;</button>
+        <button id="sampleRunBtn" class="btn" style="margin-left:6px;background:linear-gradient(90deg,var(--accent),#60A5FA);color:#fff;border:0;padding:8px 12px;border-radius:10px">示例并运行</button>
+        <div class="activity-badge">
+          <span>&#x25CF; Activity</span>
+          <select id="langSelect">
+            <option value="python" selected>Python</option>
+          </select>
+          <button id="aiConfigBtn" title="AI 配置" style="margin-left:8px;background:transparent;border:1px solid var(--border);padding:6px 8px;border-radius:8px;cursor:pointer">AI</button>
+          <div style="position:relative;display:inline-block">
+            <button id="moreToggle" class="btn" style="margin-left:8px">更多 ▾</button>
+            <div id="morePanel" class="more-panel" style="display:none;position:absolute;right:0;top:40px;background:var(--surface);border:1px solid var(--border);padding:10px;border-radius:8px;min-width:220px;z-index:120">
+              <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px"><label>装饰</label><button id="memphisToggle" class="btn">切换</button></div>
+              <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px"><label>深色模式</label><button id="darkToggle" class="btn">切换</button></div>
+              <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px"><label>动画</label><input type="checkbox" id="animToggle" checked></div>
+              <div style="display:flex;align-items:center;justify-content:space-between"><label>速度</label><input id="animSpeed" type="range" min="0.05" max="1.2" step="0.05" value="0.18" style="width:120px"></div>
+            </div>
+          </div>
+        </div>
       </div>
     </div>
 
-    <div class="stats-row" id="sectionTop">
-      <div class="stat-card"><div class="stat-label">总解析次数</div><div class="stat-value" id="totalParses">0</div><div class="stat-trend neutral" id="trendTotal">-</div></div>
-      <div class="stat-card"><div class="stat-label">Java 解析</div><div class="stat-value" id="javaCount">0</div><div class="stat-trend neutral" id="trendJava">-</div></div>
-      <div class="stat-card"><div class="stat-label">Python 解析</div><div class="stat-value" id="pythonCount">0</div><div class="stat-trend neutral" id="trendPython">-</div></div>
-      <div class="stat-card"><div class="stat-label">平均耗时</div><div class="stat-value" id="avgTime">0 <span class="stat-unit">ms</span></div><div class="stat-trend neutral" id="trendAvg">-</div></div>
-    </div>
-
-    <div class="core-grid" id="sectionCore">
+    <!-- 解析代码 面板 -->
+    <div id="panelParse">
+      <div class="core-grid" id="sectionCore">
       <div class="code-panel">
         <div class="panel-header">
           <span>代码片段</span>
           <div class="btn-group">
             <button class="btn btn-primary" id="parseBtn">生成说明书</button>
             <button class="btn" id="copyTechBtn">复制技术版</button>
-            <button class="btn" id="exportImgBtn">导出卡片</button>
+            <button class="btn" id="favoriteBtn">收藏</button>
+            <button class="btn" id="exportImgBtn">导出卡片 (PNG)</button>
+            <button class="btn" id="exportPdfBtn">导出卡片 (PDF)</button>
+            <button class="btn" id="exportParseBtn">导出解析 (JSON)</button>
           </div>
         </div>
-        <textarea id="codeInput" class="code-input" placeholder='粘贴 Java / Python 函数代码...&#10;例如：public int add(int a, int b) { return a + b; }'></textarea>
+        <textarea id="codeInput" class="code-input">def add(a: int, b: int) -> int:
+      """将两个整数相加并返回结果（示例）"""
+      return a + b</textarea>
         <div id="loadingIndicator" style="display:none;padding:1rem;text-align:center;color:var(--text2)"><span class="loading"></span> 解析中...</div>
       </div>
       <div class="doc-panel">
@@ -256,10 +368,142 @@ body{
           <button class="tab active" data-tab="tech">技术版说明书</button>
           <button class="tab" data-tab="beginner">小白版说明书</button>
         </div>
-        <div id="techDoc" class="doc-content">点击「生成说明书」查看技术解析</div>
-        <div id="beginnerDoc" class="doc-content" style="display:none">点击「生成说明书」查看生动解释</div>
+        <div id="techDoc" class="doc-content">
+          <div class="empty-state">
+            <h3>快速开始</h3>
+            <ol>
+              <li>粘贴或编写一段 Java / Python 函数代码</li>
+              <li>点击“生成说明书”查看技术解析</li>
+              <li>导出或保存结果，练习并解锁徽章</li>
+            </ol>
+            <div style="margin-top:10px"><button id="techSampleBtn" class="btn btn-primary">示例并运行</button> <button id="techHelpBtn" class="btn">查看教程</button></div>
+          </div>
+        </div>
+        <div id="beginnerDoc" class="doc-content" style="display:none">
+          <div class="empty-state">
+            <h3>生动说明（示例）</h3>
+            <p>还没有生成说明书。你可以点击右侧或上方的“示例并运行”来体验。</p>
+            <div style="margin-top:10px"><button id="beginnerSampleBtn" class="btn btn-primary">示例并运行</button></div>
+          </div>
+        </div>
+      </div>
       </div>
     </div>
+
+    <!-- 徽章墙 面板 -->
+    <div id="panelBadges" style="display:none">
+      <!-- 便当盒仪表盘：三列网格 -->
+      <!-- 快速解析卡（仪表盘首屏入口） -->
+      <div class="bento-grid" style="margin-bottom:12px;grid-template-columns:repeat(3,1fr);display:grid;gap:16px">
+            <div class="bento-card" style="grid-column:span 2">
+          <div class="card-title">快速解析</div>
+          <div style="display:flex;gap:12px;align-items:flex-start">
+            <div style="flex:1;display:flex;flex-direction:column">
+              <textarea id="quickCode" placeholder="粘贴你的函数代码（或点击示例）" style="flex:1;min-height:80px;padding:8px;border:1px solid var(--border);border-radius:8px;background:var(--surface2);font-family:monospace"></textarea>
+              <div id="quickSummary" style="margin-top:8px;color:var(--text2);font-size:13px">实时摘要将显示在这里</div>
+            </div>
+            <div style="width:220px;display:flex;flex-direction:column;gap:8px">
+              <select id="quickLang"><option value="python">Python</option><option value="java">Java</option></select>
+              <button class="btn btn-primary" id="quickParseBtn">生成说明书</button>
+              <button class="btn" id="quickSampleBtn">示例并运行</button>
+              <div style="font-size:12px;color:var(--text2)">直接在此输入并点击「生成说明书」，结果将在说明书面板显示。</div>
+            </div>
+          </div>
+        </div>
+        <div id="bentoGrid" class="bento-grid" style="margin-bottom:18px;display:grid;grid-template-columns:repeat(2,1fr);gap:16px">
+          <!-- 卡片占位，渲染由 renderBentoGrid 完成 -->
+        </div>
+      </div>
+
+      <div class="stats-row" id="sectionTop">
+        <div class="stat-card"><div class="stat-label">总解析次数</div><div class="stat-value" id="totalParses">0</div><div class="stat-trend neutral" id="trendTotal">-</div></div>
+        <div class="stat-card"><div class="stat-label">Java 解析</div><div class="stat-value" id="javaCount">0</div><div class="stat-trend neutral" id="trendJava">-</div></div>
+        <div class="stat-card"><div class="stat-label">Python 解析</div><div class="stat-value" id="pythonCount">0</div><div class="stat-trend neutral" id="trendPython">-</div></div>
+        <div class="stat-card"><div class="stat-label">平均耗时</div><div class="stat-value" id="avgTime">0 <span class="stat-unit">ms</span></div><div class="stat-trend neutral" id="trendAvg">-</div></div>
+        <div class="stat-card"><div class="stat-label">练习解析</div><div class="stat-value" id="practiceCount">0</div><div class="stat-trend neutral" id="trendPractice">-</div></div>
+      </div>
+
+      <div class="insight-row">
+        <div class="insight-card">
+          <div class="card-title">热门模式</div>
+          <div id="patternRanking" class="performer-list"><p style="color:var(--text2)">暂无数据</p></div>
+        </div>
+        <div class="insight-card">
+          <div class="card-title">比喻命中率</div>
+          <div id="metaphorStats" class="channel-list"><p style="color:var(--text2)">暂无数据</p></div>
+        </div>
+      </div>
+
+      <div class="bottom-grid" id="sectionBottom">
+        <div class="insight-card">
+          <div class="card-title">我的成就</div>
+          <div id="badgeWall" class="badge-wall"></div>
+        </div>
+        <div class="insight-card">
+            <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px">
+              <div class="card-title">最近解析</div>
+              <button id="clearHistoryBtn" class="btn" style="padding:6px 10px;font-size:12px">清空历史</button>
+            </div>
+            <div style="color:var(--text2)">历史记录已迁移到侧栏「历史记录」面板。</div>
+          </div>
+      </div>
+    </div>
+
+    <!-- 代码练习 面板 -->
+    <div id="panelPractice" style="display:none">
+      <div class="practice-center">
+        <div class="insight-card" style="margin-bottom:16px">
+          <div class="card-title">代码对比练习</div>
+            <div style="display:flex;gap:12px;flex-wrap:wrap">
+            <textarea id="practiceDesc" placeholder="输入目标描述，例如：计算列表平均值" style="flex:1;min-height:80px;padding:12px;border:1px solid var(--border);border-radius:8px;background:var(--surface)"></textarea>
+            <div style="width:560px;display:flex;flex-direction:column;gap:8px">
+              <select id="practiceLang"><option value="python">Python</option><option value="java">Java</option></select>
+              <textarea id="practiceCode" placeholder="在此编写代码" style="height:520px;font-family:monospace;padding:14px;border:1px solid var(--border);border-radius:8px;background:var(--surface2);min-width:520px"></textarea>
+              <div style="display:flex;gap:8px;align-items:center">
+                  <button class="btn btn-primary" id="evalPracticeBtn">评估</button>
+                  <button class="btn" id="runPyBtn">运行测试 (Pyodide)</button>
+                  <button class="btn" id="aiEvalBtn">AI 深度评估</button>
+                  <button class="btn" id="saveNoteBtn">添加笔记</button>
+                  <button class="btn" id="showMoreBtn" style="margin-left:8px">显示更多</button>
+                </div>
+            </div>
+          </div>
+          <div id="practiceResult" style="margin-top:12px"></div>
+        </div>
+      </div>
+
+      <div class="insight-card extra" style="margin-bottom:16px">
+        <div class="card-title">我的收藏</div>
+        <div id="favoritesList">暂无收藏</div>
+      </div>
+
+      <div class="insight-card extra" style="margin-bottom:16px">
+        <div class="card-title">每日挑战</div>
+        <div id="dailyChallenge"></div>
+        <div style="margin-top:8px" id="challengeResult"></div>
+        <div style="margin-top:8px"><button class="btn" id="submitChallengeBtn">提交挑战</button> <button class="btn" id="viewChallengeHistoryBtn">查看挑战记录</button></div>
+        <div id="challengeHistory" style="margin-top:8px"></div>
+      </div>
+
+      <div class="insight-card extra">
+        <div class="card-title">我的笔记</div>
+        <div id="notesList">暂无笔记</div>
+        <div style="margin-top:8px"><button class="btn" id="exportNotesBtn">导出笔记 (JSON)</button></div>
+      </div>
+    </div>
+
+    <!-- 历史记录 面板（唯一来源） -->
+    <div id="panelHistory" style="display:none">
+      <div class="insight-card">
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px">
+          <div class="card-title">历史记录</div>
+          <button id="clearHistoryBtn2" class="btn" style="padding:6px 10px;font-size:12px">清空历史</button>
+        </div>
+        <ul class="history-list" id="historyList"><li style="color:var(--text2)">暂无记录</li></ul>
+      </div>
+    </div>
+
+    
 
     <div class="insight-row">
       <div class="insight-card">
@@ -278,14 +522,18 @@ body{
         <div id="badgeWall" class="badge-wall"></div>
       </div>
       <div class="insight-card">
-        <div class="card-title">&#x23F1; 最近解析</div>
-        <ul class="history-list" id="historyList"><li style="color:var(--text2)">暂无记录</li></ul>
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px">
+          <div class="card-title">&#x23F1; 最近解析</div>
+          <button id="clearHistoryBtn" class="btn" style="padding:6px 10px;font-size:12px">清空历史</button>
+        </div>
+        <div style="color:var(--text2)">历史记录已迁移到侧栏「历史记录」面板。</div>
       </div>
     </div>
 
     <div class="footer-actions">
       <button id="fullStatsBtn">Full Stats</button>
       <button id="logoutBtn">Log out (重置数据)</button>
+    </div>
     </div>
   </div>
 </div>
@@ -334,6 +582,41 @@ const METAPHOR_LIBRARY = [
 ];
 var DEFAULT_METAPHOR_ENTRY = {concept:'数据处理',metaphor:'一位可靠的助手',action:'接收材料，默默处理好，然后把结果递回给你',inputDesc:'需要处理的数据',outputDesc:'处理后的结果'};
 
+var BADGES_DEF = {
+  first_blood:{id:'first_blood',name:'初次解析',icon:'&#9733;'},
+  java_master:{id:'java_master',name:'Java 大师',icon:'&#9749;'},
+  metaphor_hunter:{id:'metaphor_hunter',name:'比喻猎人',icon:'&#127919;'},
+  night_owl:{id:'night_owl',name:'夜猫子',icon:'&#127769;'}
+  ,perfect_ten:{id:'perfect_ten',name:'完美十连',icon:'\ud83c\udfc6'},
+  dual_master:{id:'dual_master',name:'双栖大师',icon:'\u26a1'}
+};
+
+// 示例代码（用于 onboarding / 快速体验）
+var SAMPLE_CODE = 'def add(a: int, b: int) -> int:\n    """示例：将两个整数相加并返回结果"""\n    return a + b';
+
+// Onboarding：首次用户显示三步引导并提供示例一键运行
+function showOnboardingIfFirstTime(){
+  try{
+    if(localStorage.getItem('seenOnboarding')) return;
+    var overlay = document.createElement('div'); overlay.className='onboard-overlay'; overlay.id='onboardOverlay';
+    var modal = document.createElement('div'); modal.className='onboard-modal'; modal.setAttribute('role','dialog'); modal.setAttribute('aria-modal','true');
+    modal.innerHTML = '<h3>快速上手 — 3 步引导</h3><div class="onboard-steps"><div class="onboard-step"><strong>第一步</strong><p>粘贴要解析的函数代码到编辑器。</p></div><div class="onboard-step"><strong>第二步</strong><p>点击“生成说明书”查看专业解析。</p></div><div class="onboard-step"><strong>第三步</strong><p>导出或保存结果，练习并获得徽章。</p></div></div><div style="font-size:13px;color:var(--text2)">你也可以点击“示例并运行”直接体验示例。</div><div class="onboard-actions"><button id="onboardSkipBtn" class="btn">跳过</button><button id="onboardSampleRunBtn" class="btn btn-primary">示例并运行</button></div>';
+    overlay.appendChild(modal); document.body.appendChild(overlay);
+    document.getElementById('onboardSkipBtn').addEventListener('click',function(){ localStorage.setItem('seenOnboarding','1'); document.body.removeChild(overlay); });
+    document.getElementById('onboardSampleRunBtn').addEventListener('click',function(){ localStorage.setItem('seenOnboarding','1'); fillSampleAndRun(); document.body.removeChild(overlay); });
+  }catch(e){}
+}
+
+function fillSampleAndRun(){
+  try{
+    var ta = document.getElementById('codeInput'); if(!ta) return;
+    ta.value = SAMPLE_CODE;
+    var ls = document.getElementById('langSelect'); if(ls) ls.value='python';
+    ta.focus();
+    setTimeout(function(){ var pb=document.getElementById('parseBtn'); if(pb) pb.click(); },120);
+  }catch(e){}
+}
+
 // ==================== 解析引擎 ====================
 function splitParams(str){
   var parts=[],depth=0,current='';
@@ -363,16 +646,49 @@ function parseJava(code){
 }
 function parsePython(code){
   var r={methodName:'',parameters:[],returnType:'',dependencies:[],hasTryCatch:false,rawCode:code.trim()};
-  var ir=/^(?:import|from)\s+([\w.]+)/gm,m;
-  while((m=ir.exec(code))!==null)r.dependencies.push(m[1]);
-  r.hasTryCatch=/try\s*:/i.test(code);
-  var dr=/def\s+(\w+)\s*\(([^)]*)\)\s*(?:->\s*(\w+))?\s*:/;
-  var dm=code.match(dr);
+  if(!code||!code.trim()){
+    r.methodName='未命名函数';r.returnType='void';return r;
+  }
+  // collect imports (operate on original code so we don't miss from/import in strings)
+  try{
+    var ir=/^(?:\s*(?:from|import)\s+([\w_.]+))/gm,m;
+    while((m=ir.exec(code))!==null) if(m[1]) r.dependencies.push(m[1]);
+  }catch(e){}
+  r.hasTryCatch=/\btry\s*:/i.test(code);
+
+  // sanitize: remove triple-quoted strings, then normal string literals, then comments
+  var codeSanitized = code.replace(/('{3}|\"\"\")([\s\S]*?)\1/gm,'');
+  codeSanitized = codeSanitized.replace(/(["'])(?:\\.|[^\\\n])*?\1/gm,'');
+  codeSanitized = codeSanitized.replace(/#.*$/gm,'');
+
+  // match possible decorator lines, optional async, multiline signatures
+  var dr = /(?:^|\n)\s*(?:@[^\n]*\n\s*)*(?:async\s+)?def\s+([A-Za-z_]\w*)\s*\(([^\)]*)\)\s*(?:->\s*([^:\n]+))?\s*:/m;
+  var dm = codeSanitized.match(dr);
   if(dm){
-    r.methodName=dm[1];r.returnType=dm[3]||'Any';
-    var ps=dm[2].trim();
-    if(ps&&ps!=='self'){r.parameters=splitParams(ps).filter(function(p){var n=p.trim().split(/\s*[:=]/)[0].trim();return n!=='self'&&n!=='cls'}).map(function(p){var t=p.trim(),n=t;var ei=t.indexOf('=');var bd=ei>=0?t.substring(0,ei).trim():t;var ci=bd.indexOf(':');if(ci>=0){n=bd.substring(0,ci).trim();var tp=bd.substring(ci+1).trim();return{name:n,type:tp}}return{name:bd,type:'Any'}})};
-  }else{r.methodName='未命名函数';r.returnType='void'}
+    r.methodName = dm[1];
+    r.returnType = (dm[3]||'Any').trim();
+    var ps = (dm[2]||'').trim();
+    if(ps){
+      r.parameters = splitParams(ps).filter(function(p){
+        var n = p.trim().split(/\s*[:=]/)[0].trim();
+        return n && n!=='self' && n!=='cls';
+      }).map(function(p){
+        var t = p.trim();
+        var ei = t.indexOf('=');
+        var defaultVal = null;
+        if(ei>=0){ defaultVal = t.substring(ei+1).trim(); if(defaultVal.charAt(defaultVal.length-1)==',') defaultVal = defaultVal.slice(0,-1).trim(); }
+        var bd = ei>=0 ? t.substring(0,ei).trim() : t;
+        var ci = bd.indexOf(':');
+        if(ci>=0){
+          var n = bd.substring(0,ci).trim(); var tp = bd.substring(ci+1).trim();
+          return {name:n, type: tp||'Any', default: defaultVal||null};
+        }
+        return {name: bd, type: 'Any', default: defaultVal||null};
+      });
+    }
+  }else{
+    r.methodName='未命名函数'; r.returnType='void';
+  }
   return r;
 }
 
@@ -408,9 +724,9 @@ function detectPatterns(parsed,code){
 function calculateHealthScore(code,parsedParams){
   var score=100,deductions=[];
   if(parsedParams.length>3){var pp=(parsedParams.length-3)*5;score-=pp;deductions.push({label:'参数数量',value:parsedParams.length+'个',penalty:'-'+pp})}
-  var lines=code.split('\n').length;
+  var la=code.split('\n');var lines=la.length;
   if(lines>20){var lp=Math.floor((lines-20)/10)*5;score-=lp;deductions.push({label:'代码行数',value:lines+'行',penalty:'-'+lp})}
-  var maxDepth=0;var la=code.split('\n');
+  var maxDepth=0;
   for(var i=0;i<la.length;i++){var lead=la[i].length-la[i].trimStart().length;var depth=Math.floor(lead/4);if(depth>maxDepth)maxDepth=depth}
   if(maxDepth>3){var dp=(maxDepth-3)*4;score-=dp;deductions.push({label:'嵌套深度',value:maxDepth+'层',penalty:'-'+dp})}
   var cm=(code.match(/if|for|while|&&|\|\||except/g)||[]).length+1;
@@ -487,23 +803,87 @@ function explainJavaLine(line){
 }
 
 // ==================== 统计系统 ====================
-var appStats={total:0,javaCount:0,pythonCount:0,totalTime:0,avgTime:0,patternStats:{},metaphorHits:{},history:[],badgeState:{},nightOwl:false};
+var appStats={total:0,javaCount:0,pythonCount:0,totalTime:0,avgTime:0,patternStats:{},metaphorHits:{},history:[],badgeState:{},nightOwl:false,
+  settings:{theme:'light',animEnabled:true,animSpeed:0.18},favorites:[],notes:[],consecutiveSuccess:0,lastCodeHash:null,memphisEnabled:false,practiceCount:0};
 
 function loadStats(){
   try{var s=localStorage.getItem('codeDocStats');if(s){var l=JSON.parse(s);Object.assign(appStats,l);if(!appStats.history)appStats.history=[];if(!appStats.patternStats)appStats.patternStats={};if(!appStats.metaphorHits)appStats.metaphorHits={};if(!appStats.badgeState)appStats.badgeState={}}}catch(e){}
+  // ensure fields
+  if(!appStats.settings)appStats.settings={theme:'light',animEnabled:true,animSpeed:0.18};
+  if(typeof appStats.practiceCount==='undefined') appStats.practiceCount = 0;
+  if(!appStats.practiceHistory) appStats.practiceHistory = [];
+  if(typeof appStats.consecutiveSuccess==='undefined')appStats.consecutiveSuccess=0;
+  if(!appStats.favorites)appStats.favorites=[];
+  if(!appStats.notes)appStats.notes=[];
+  // apply theme & animation
+  applyTheme(appStats.settings.theme);
+  applyAnimationSettings(appStats.settings.animEnabled, appStats.settings.animSpeed);
   renderAllUI();
+  try{ showOnboardingIfFirstTime(); }catch(e){}
 }
 function saveStats(){try{localStorage.setItem('codeDocStats',JSON.stringify(appStats))}catch(e){}}
 
-function recordParse(language,duration,code,metaphorTag,patterns){
+function normalizeCodeForHash(code){
+  if(!code) return '';
+  // 去除三引号注释
+  code = code.replace(/('''|\"\"\")[\s\S]*?\1/g,'');
+  // 去除单行注释（Python #）
+  code = code.replace(/#.*$/gm,'');
+  // 去除所有空白（包括换行/空格/制表）
+  code = code.replace(/\s+/g,' ');
+  // 移除字符串字面量
+  code = code.replace(/(["'])(?:\\.|[^\\\n])*?\1/g,'');
+  // 提取并排序 import/from 语句以减少顺序差异
+  try{
+    var imports = [];
+    code = code.replace(/^(?:\s*(?:from|import)\s+[\w_.]+(?:\s+import\s+[\w_,\s*]+)?)$/gim,function(m){ imports.push(m.replace(/\s+/g,' ')); return ''; });
+    if(imports.length>0){ imports = imports.map(function(i){return i.trim()}).sort(); code = imports.join('\n') + '\n' + code; }
+  }catch(e){}
+  // 简化连续空格
+  code = code.replace(/\s+/g,' ').trim();
+  // 规范化变量名：将连续的标识符替换为占位符，减少命名差异影响（尽量保留关键字和函数名）
+  try{
+    // 首先捕获函数/def 名称，保留它
+    var fnMatch = code.match(/def\s+([A-Za-z_]\w*)/);
+    var fnName = fnMatch?fnMatch[1]:null;
+    // 替换标识符为 v1,v2... 但跳过 Python 关键字 and function name
+    var keywords = ['def','return','if','else','elif','for','while','try','except','with','as','class','import','from','in','and','or','not','is','lambda','async','await','pass','break','continue','yield','True','False','None'];
+    var idMap = {};
+    var idIdx = 1;
+    code = code.replace(/\b([A-Za-z_]\w*)\b/g,function(m){
+      if(keywords.indexOf(m)!==-1) return m;
+      if(fnName && m===fnName) return m;
+      if(/^[A-Z][A-Za-z0-9_]*$/.test(m)) return m; // 保留可能的类名或常量
+      if(!idMap[m]){ idMap[m] = 'v'+(idIdx++); }
+      return idMap[m];
+    });
+  }catch(e){}
+  return code;
+}
+function simpleHash(str){var h=5381;for(var i=0;i<str.length;i++){h=((h<<5)+h)+str.charCodeAt(i);}return (h>>>0).toString(16)}
+
+function recordParse(language,duration,code,metaphorTag,patterns,funcName){
+  // 基本计数
   appStats.total++;if(language==='java')appStats.javaCount++;else appStats.pythonCount++;
   appStats.totalTime+=duration;appStats.avgTime=Math.round(appStats.totalTime/appStats.total);
   for(var i=0;i<patterns.length;i++){var p=patterns[i];appStats.patternStats[p]=(appStats.patternStats[p]||0)+1}
   if(metaphorTag&&metaphorTag!=='generic')appStats.metaphorHits[metaphorTag]=(appStats.metaphorHits[metaphorTag]||0)+1;
-  var fn=code.match(/(?:def|public|private|protected)?\s*(?:static\s+)?(?:\w[\w.<>\[\]]*\s+)?(\w+)\s*\(/);
-  appStats.history.unshift({code:code,language:language,funcName:fn?fn[1]:'func',timestamp:Date.now()});
-  if(appStats.history.length>8)appStats.history.length=8;
+  appStats.history.unshift({code:code,language:language,funcName:funcName||'func',timestamp:Date.now()});
+  if(appStats.history.length>50)appStats.history.length=50; // 保留更多历史
   var h=new Date().getHours();if(h>=0&&h<5)appStats.nightOwl=true;
+
+  // 完美十连计数：去注释与空白后哈希，要求连续成功且每次代码内容不同才计数
+  try{
+    var normalized = normalizeCodeForHash(code);
+    var hh = simpleHash(normalized);
+    if(!appStats.lastCodeHash || appStats.lastCodeHash !== hh){
+      appStats.consecutiveSuccess = (appStats.consecutiveSuccess||0) + 1;
+      appStats.lastCodeHash = hh;
+    } else {
+      // 相同代码不计入新的连胜
+    }
+  }catch(e){appStats.consecutiveSuccess=0;appStats.lastCodeHash=null}
+
   checkBadges();saveStats();renderAllUI();
 }
 
@@ -513,19 +893,25 @@ function checkBadges(){
   if(appStats.javaCount>=10&&!b.java_master){b.java_master={unlocked:true,time:Date.now()};showToast('解锁徽章：Java 大师')}
   if(uk>=20&&!b.metaphor_hunter){b.metaphor_hunter={unlocked:true,time:Date.now()};showToast('解锁徽章：比喻猎人')}
   if(appStats.nightOwl&&!b.night_owl){b.night_owl={unlocked:true,time:Date.now()};showToast('解锁徽章：夜猫子')}
+  // 完美十连：连续解析 10 次且每次代码不同（已规范化去注释/空白后哈希）
+  if((appStats.consecutiveSuccess||0)>=10 && !b.perfect_ten){b.perfect_ten={unlocked:true,time:Date.now()};showToast('解锁隐藏徽章：完美十连')} 
+  // 双栖大师（示例）：Java 与 Python 双向成就（若达到则解锁）
+  if(appStats.javaCount>=5 && appStats.pythonCount>=5 && !b.dual_master){b.dual_master={unlocked:true,time:Date.now()};showToast('解锁隐藏徽章：双栖大师')}
 }
 
 function renderAllUI(){
-  var te=document.getElementById('totalParses');if(te)te.textContent=appStats.total;
-  var je=document.getElementById('javaCount');if(je)je.textContent=appStats.javaCount;
-  var pe=document.getElementById('pythonCount');if(pe)pe.textContent=appStats.pythonCount;
-  var ae=document.getElementById('avgTime');if(ae)ae.innerHTML=appStats.avgTime+' <span class="stat-unit">ms</span>';
+  var te=document.getElementById('totalParses');if(te)te.textContent=appStats.total>0?appStats.total:'等待首次解析';
+  var je=document.getElementById('javaCount');if(je)je.textContent=appStats.javaCount>0?appStats.javaCount:'等待首次解析';
+  var pe=document.getElementById('pythonCount');if(pe)pe.textContent=appStats.pythonCount>0?appStats.pythonCount:'等待首次解析';
+  var pce=document.getElementById('practiceCount'); if(pce) pce.textContent = appStats.practiceCount>0?appStats.practiceCount:'暂无';
+  var ae=document.getElementById('avgTime');if(ae)ae.innerHTML=appStats.avgTime>0?appStats.avgTime+' <span class="stat-unit">ms</span>':'等待首次解析';
 
   // 趋势标签
   var tt=document.getElementById('trendTotal');if(tt){tt.textContent=appStats.total>0?'解析中':'等待首次';tt.className='stat-trend '+(appStats.total>0?'up':'neutral')}
   var tj=document.getElementById('trendJava');if(tj){tj.textContent=appStats.javaCount>0?appStats.javaCount+' 次':'无';tj.className='stat-trend '+(appStats.javaCount>0?'up':'neutral')}
   var tp=document.getElementById('trendPython');if(tp){tp.textContent=appStats.pythonCount>0?appStats.pythonCount+' 次':'无';tp.className='stat-trend '+(appStats.pythonCount>0?'up':'neutral')}
   var ta=document.getElementById('trendAvg');if(ta){ta.textContent=appStats.avgTime>0?appStats.avgTime+' ms/次':'待测';ta.className='stat-trend '+(appStats.avgTime>0&&appStats.avgTime<50?'up':'neutral')}
+  var tpr=document.getElementById('trendPractice'); if(tpr){ tpr.textContent = appStats.practiceCount>0?appStats.practiceCount+' 次':'无'; tpr.className='stat-trend '+(appStats.practiceCount>0?'up':'neutral') }
 
   var sp=Object.entries(appStats.patternStats).sort(function(a,b){return b[1]-a[1]}).slice(0,3);
   var totalP=Object.values(appStats.patternStats).reduce(function(a,b){return a+b},0);
@@ -537,34 +923,575 @@ function renderAllUI(){
   document.getElementById('metaphorStats').innerHTML=mh;
 
   var hl='';
-  for(var hi=0;hi<Math.min(5,appStats.history.length);hi++){
-    var h=appStats.history[hi];var cs=h.code.replace(/\n/g,' ').substring(0,60);
-    hl+='<li onclick="fillHistoryByIdx('+hi+')"><span class="history-func">'+(h.language==='java'?'Java':'Python')+'</span> <span class="history-code">'+escapeHtml(cs)+'</span></li>';
+  for(var hi=0;hi<Math.min(8,appStats.history.length);hi++){
+    var h=appStats.history[hi];var cs=h.code.replace(/\n/g,' ').substring(0,80);
+    var timeAgoStr=timeAgo(h.timestamp);
+    var langLabel=(h.language==='java'?'<strong style="color:var(--accent2)">[Java]</strong>':'<strong style="color:var(--accent)">[Python]</strong>');
+    hl+='<li onclick="fillHistoryByIdx('+hi+')">'+langLabel+' <span class="history-func">'+escapeHtml(h.funcName||'func')+'</span> <span class="history-code">'+escapeHtml(cs)+'</span><span style="float:right;color:var(--text2);font-size:12px">'+timeAgoStr+'</span></li>';
   }
   document.getElementById('historyList').innerHTML=hl||'<li style="color:var(--text2)">暂无记录</li>';
 
-  var badgesDef={
-    first_blood:{id:'first_blood',name:'初次解析',icon:'&#9733;'},
-    java_master:{id:'java_master',name:'Java 大师',icon:'&#9749;'},
-    metaphor_hunter:{id:'metaphor_hunter',name:'比喻猎人',icon:'&#127919;'},
-    night_owl:{id:'night_owl',name:'夜猫子',icon:'&#127769;'}
-  };
   var uk=Object.keys(appStats.metaphorHits).length;
   var progressMap={java_master:appStats.javaCount+'/10',metaphor_hunter:uk+'/20'};
   var bh='';
-  for(var bid in badgesDef){
-    var def=badgesDef[bid];var unlocked=!!(appStats.badgeState[bid]&&appStats.badgeState[bid].unlocked);
-    bh+='<div class="badge-item '+(unlocked?'unlocked':'locked')+'"><div class="badge-icon">'+def.icon+'</div><div class="badge-name">'+def.name+'</div>'+(unlocked?'<div style="font-size:10px;color:var(--accent2)">已达成</div>':(progressMap[bid]?'<div class="badge-progress">'+progressMap[bid]+'</div>':''))+'</div>';
+  for(var bid in BADGES_DEF){
+    var def=BADGES_DEF[bid];var unlocked=!!(appStats.badgeState[bid]&&appStats.badgeState[bid].unlocked);
+    if(unlocked){
+      var unlockedAt=(appStats.badgeState[bid]&&appStats.badgeState[bid].time)?new Date(appStats.badgeState[bid].time).toLocaleString():'已达成';
+      bh+='<div class="badge-item unlocked" title="已解锁：'+unlockedAt+'"><div class="badge-icon">'+def.icon+'</div><div class="badge-name">'+def.name+'</div><div style="font-size:10px;color:var(--accent2)">已达成</div></div>';
+    }else{
+      var prog=progressMap[bid]?('<div class="badge-progress">'+progressMap[bid]+'</div>'):'<div class="badge-progress" style="color:var(--text2)">未达成</div>';
+      var condition='';
+      if(bid==='first_blood')condition='解析 1 次即可解锁';
+      if(bid==='java_master')condition='解析 Java 10 次（当前 '+appStats.javaCount+'/10）';
+      if(bid==='metaphor_hunter'){
+        var kcount=Object.keys(appStats.metaphorHits).length;
+        condition='比喻命中 20 次（当前 '+kcount+'/20）';
+      }
+      if(bid==='night_owl')condition='在午夜时段解析以触发（当前 '+(appStats.nightOwl? '已触发':'未触发')+')';
+      bh+='<div class="badge-item locked" title="解锁条件：'+condition+'"><div class="badge-icon">'+def.icon+'</div><div class="badge-name">'+def.name+'</div>'+prog+'<div class="badge-lock">🔒</div></div>';
+    }
   }
   document.getElementById('badgeWall').innerHTML=bh;
+  // 渲染便当盒仪表盘
+  try{ renderBentoGrid(); }catch(e){}
 }
 
+// 便当盒渲染：五张卡片（今日挑战、总解析、练习概览、Top performers、平均耗时）
+function renderBentoGrid(){
+  var container = document.getElementById('bentoGrid'); if(!container) return;
+  var todayCount = appStats.history.filter(function(h){
+    var d = new Date(h.timestamp); var now=new Date(); return d.toDateString()===now.toDateString();
+  }).length;
+  var avgPracticeScore = 0; var passRate='-';
+  if(appStats.practiceHistory && appStats.practiceHistory.length>0){
+    var sum=0,pass=0;appStats.practiceHistory.forEach(function(p){sum+=p.score; if(p.score>=60) pass++;}); avgPracticeScore=Math.round(sum/appStats.practiceHistory.length);
+    passRate = Math.round(pass/appStats.practiceHistory.length*100)+'%';
+  }
+  // 30 天 sparkline 数据（按日期统计解析次数）
+  var counts=[]; for(var i=29;i>=0;i--){var dt=new Date(); dt.setDate(dt.getDate()-i); var dStr=dt.toDateString(); var c=appStats.history.filter(function(h){return new Date(h.timestamp).toDateString()===dStr}).length; counts.push(c);} 
+  function makeSparklineSvg(values){
+    var w=200,h=48,pad=2; var max=Math.max.apply(null,values)||1; var step=w/(values.length-1||1); var points=[]; for(var i=0;i<values.length;i++){var x=Math.round(i*step);var y=Math.round(h - (values[i]/max)*(h-4)); points.push(x+','+y);} return '<svg class="sparkline" viewBox="0 0 '+w+' '+h+'" preserveAspectRatio="none"><polyline fill="none" stroke="'+getComputedStyle(document.documentElement).getPropertyValue('--accent').trim()+'" stroke-width="2" points="'+points.join(' ')+'"/></svg>' }
+
+  var html = '';
+  html += '<div class="bento-card">\n  <div class="card-title">今日解析</div>\n  <div class="card-value">'+todayCount+' 次</div>\n  <div class="bento-mini">'+makeSparklineSvg(counts.slice(-10))+'</div>\n</div>';
+  html += '<div class="bento-card">\n  <div class="card-title">总解析</div>\n  <div class="card-value">'+(appStats.total||0)+'</div>\n  <div class="bento-mini">'+makeSparklineSvg(counts)+'</div>\n</div>';
+  html += '<div class="bento-card">\n  <div class="card-title">练习概览</div>\n  <div class="card-value">'+(appStats.practiceCount||0)+' 次</div>\n  <div style="margin-top:8px;color:var(--text2)">平均得分：'+(avgPracticeScore||'-')+'，通过率：'+passRate+'</div>\n</div>';
+  html += '<div class="bento-card">\n  <div class="card-title">Top Patterns</div>\n  <div class="card-value">'+(Object.keys(appStats.patternStats).length?Object.entries(appStats.patternStats).sort(function(a,b){return b[1]-a[1]})[0][0]:'-')+'</div>\n  <div style="margin-top:8px;color:var(--text2)">热门模式 & 排行</div>\n</div>';
+  html += '<div class="bento-card">\n  <div class="card-title">平均耗时</div>\n  <div class="card-value">'+(appStats.avgTime||'-')+' ms</div>\n  <div style="margin-top:8px;color:var(--text2)">最近 30 天简况</div>\n</div>';
+  container.innerHTML = html;
+}
+
+// 应用主题
+function applyTheme(t){
+  if(t==='dark'){document.body.classList.add('dark');document.documentElement.style.setProperty('--bg-deep','#071021');document.documentElement.style.setProperty('--surface','#071826');document.documentElement.style.setProperty('--surface2','#0b1220');document.documentElement.style.setProperty('--border','#123042');document.documentElement.style.setProperty('--text','#E6EEF7');document.documentElement.style.setProperty('--text2','#9FB7CE');}
+  else {document.body.classList.remove('dark');document.documentElement.style.removeProperty('--bg-deep');document.documentElement.style.removeProperty('--surface');document.documentElement.style.removeProperty('--surface2');document.documentElement.style.removeProperty('--border');document.documentElement.style.removeProperty('--text');document.documentElement.style.removeProperty('--text2');}
+}
+
+// 应用动画设置
+function applyAnimationSettings(enabled, speed){
+  if(!enabled){document.documentElement.style.setProperty('--anim-speed','0.01s');}else{document.documentElement.style.setProperty('--anim-speed', (speed||0.18)+'s');}
+}
+
+// 渲染笔记与收藏
+function renderNotesUI(){
+  var holder=document.getElementById('notesList'); if(!holder) return;
+  var arr=appStats.notes||[]; if(arr.length===0){holder.innerHTML='暂无笔记';return}
+  holder.innerHTML='';
+  for(var i=0;i<arr.length;i++){
+    var it=arr[i];
+    var el=document.createElement('div'); el.style.padding='8px 0'; el.style.borderBottom='1px solid var(--border)';
+    // render markdown description to HTML
+    var mdHtml = markdownToHtml(it.desc||'');
+    var snippet = escapeHtml((it.code||'').substring(0,800));
+    var assoc = it.codeHash?('<div style="font-size:12px;color:var(--text2);margin-bottom:6px">关联代码哈希：<span style="font-family:\'Fira Code\',monospace">'+escapeHtml(it.codeHash)+'</span></div>') : '<div style="font-size:12px;color:var(--text2);margin-bottom:6px">未关联代码</div>';
+    el.innerHTML = '<div style="display:flex;justify-content:space-between;align-items:flex-start"><div style="flex:1">'+mdHtml+'<div style="margin-top:8px"><pre style="background:var(--surface2);padding:8px;border-radius:6px;margin:0">'+snippet+'</pre></div><div style="font-size:12px;color:var(--text2);margin-top:6px">'+new Date(it.timestamp).toLocaleString()+'</div></div><div style="margin-left:12px;display:flex;flex-direction:column;gap:8px"><button class="btn" onclick="fillNoteToPractice('+i+')">回填练习</button><button class="btn" onclick="viewNote('+i+')">查看</button><button class="btn" onclick="deleteNote('+i+')">删除</button></div></div>' + assoc;
+    holder.appendChild(el);
+  }
+}
+
+// 简易 Markdown 渲染（支持标题、粗体、斜体、代码块、行内代码、链接、无序列表）
+function markdownToHtml(md){
+  if(!md) return '';
+  // escape HTML
+  md = md.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+  // code blocks ``` ```
+  md = md.replace(/```([\s\S]*?)```/g,function(m,p){return '<pre style="background:var(--surface2);padding:8px;border-radius:6px;margin:8px 0"><code>'+p.replace(/&/g,'&amp;')+'</code></pre>'});
+  // headings
+  md = md.replace(/^######\s?(.*)$/gm,'<h6>$1</h6>');
+  md = md.replace(/^#####\s?(.*)$/gm,'<h5>$1</h5>');
+  md = md.replace(/^####\s?(.*)$/gm,'<h4>$1</h4>');
+  md = md.replace(/^###\s?(.*)$/gm,'<h3>$1</h3>');
+  md = md.replace(/^##\s?(.*)$/gm,'<h2>$1</h2>');
+  md = md.replace(/^#\s?(.*)$/gm,'<h1>$1</h1>');
+  // bold **text**
+  md = md.replace(/\*\*(.*?)\*\*/g,'<strong>$1</strong>');
+  // italic *text*
+  md = md.replace(/\*(.*?)\*/g,'<em>$1</em>');
+  // inline code `code`
+  md = md.replace(/`([^`]+)`/g,'<code style="background:rgba(0,0,0,0.04);padding:2px 4px;border-radius:4px">$1</code>');
+  // links [text](url)
+  md = md.replace(/\[([^\]]+)\]\(([^)]+)\)/g,'<a href="$2" target="_blank" rel="noreferrer noopener">$1</a>');
+  // unordered lists
+  md = md.replace(/(^|\n)[\s]*[-\*]\s+(.+(?:\n|$))/g,function(m,p1,p2){
+    var items = m.trim().split(/\n/).map(function(r){return r.replace(/^[-\*]\s+/,'')});
+    return '<ul>'+items.map(function(it){return '<li>'+it+'</li>'}).join('')+'</ul>';
+  });
+  // paragraphs
+  md = md.replace(/\n{2,}/g,'</p><p>');
+  md = '<p>' + md + '</p>';
+  return md;
+}
+
+function fillNoteToPractice(idx){var it=(appStats.notes||[])[idx]; if(!it) return; document.getElementById('practiceCode').value = it.code||''; document.getElementById('practiceDesc').value = it.desc||''; showToast('已回填到练习面板');}
+function deleteNote(idx){ if(!confirm('确认删除该笔记吗？')) return; appStats.notes.splice(idx,1); saveStats(); renderNotesUI(); showToast('已删除笔记'); }
+function viewNote(idx){ var it=(appStats.notes||[])[idx]; if(!it) return; var m=document.createElement('div'); m.className='modal-overlay'; var b=document.createElement('div'); b.className='modal-box'; b.innerHTML='<div style="display:flex;justify-content:space-between;align-items:center"><h2 style="margin:0">笔记</h2><button class="modal-close" onclick="this.parentNode.parentNode.remove()">&times;</button></div><div style="margin-top:12px">'+markdownToHtml(it.desc||'')+'<pre style="background:var(--surface2);padding:8px;border-radius:6px;margin-top:8px">'+escapeHtml(it.code||'')+'</pre></div>'; m.appendChild(b); document.body.appendChild(m); }
+function renderFavoritesUI(){
+  var holder=document.getElementById('favoritesList'); if(!holder) return;
+  var arr=appStats.favorites||[]; if(arr.length===0){holder.innerHTML='暂无收藏';return}
+  holder.innerHTML='';
+  for(var i=0;i<arr.length;i++){
+    var it=arr[i];
+    var d=document.createElement('div'); d.style.padding='8px 0'; d.style.borderBottom='1px solid var(--border)';
+    var snippet = escapeHtml((it.code||'').substring(0,300));
+    d.innerHTML = '<div style="display:flex;justify-content:space-between;align-items:center"><div style="font-weight:600">'+escapeHtml(it.title||'片段')+'</div><div style="display:flex;gap:8px">'
+      +'<button class="btn" onclick="fillFavoriteToParse('+i+')">回填解析</button>'
+      +'<button class="btn" onclick="fillFavoriteToPractice('+i+')">回填练习</button>'
+      +'<button class="btn" onclick="viewFavorite('+i+')">查看</button>'
+      +'<button class="btn" onclick="deleteFavorite('+i+')">删除</button>'
+      +'</div></div><pre style="background:var(--surface2);padding:8px;border-radius:6px;margin-top:8px">'+snippet+'</pre>';
+    holder.appendChild(d);
+  }
+}
+
+// 收藏操作：回填到解析面板
+function fillFavoriteToParse(idx){var it=(appStats.favorites||[])[idx]; if(!it) return; document.getElementById('codeInput').value = it.code||''; document.getElementById('langSelect').value = it.language||'python'; showToast('已回填到解析面板'); document.getElementById('parseBtn').click();}
+// 回填到练习面板
+function fillFavoriteToPractice(idx){var it=(appStats.favorites||[])[idx]; if(!it) return; document.getElementById('practiceCode').value = it.code||''; document.getElementById('practiceDesc').value = it.title||''; showToast('已回填到练习面板');}
+// 删除收藏
+function deleteFavorite(idx){ if(!confirm('确认删除该收藏吗？')) return; appStats.favorites.splice(idx,1); saveStats(); renderFavoritesUI(); showToast('已删除收藏'); }
+// 查看收藏详情（弹窗）
+function viewFavorite(idx){ var it=(appStats.favorites||[])[idx]; if(!it) return; var modal=document.createElement('div'); modal.className='modal-overlay'; modal.id='favModalTemp'; var box=document.createElement('div'); box.className='modal-box'; box.innerHTML = '<div style="display:flex;justify-content:space-between;align-items:center"><h2 style="margin:0">'+escapeHtml(it.title||'收藏详情')+'</h2><button class="modal-close" onclick="document.getElementById(\'favModalTemp\').remove()">&times;</button></div><div style="margin-top:12px">'+(it.techDocHTML||'<pre>'+escapeHtml(it.code||'')+'</pre>')+'<div style="margin-top:10px;display:flex;gap:8px;justify-content:flex-end"><button class="btn" onclick="fillFavoriteToParse('+idx+')">回填解析</button><button class="btn" onclick="fillFavoriteToPractice('+idx+')">回填练习</button><button class="btn" onclick="(function(){deleteFavorite('+idx+');document.getElementById(\'favModalTemp\').remove()})()">删除</button></div></div>';
+  modal.appendChild(box); document.body.appendChild(modal);
+}
+
+// ==================== 孟菲斯装饰 控制 ====================
+function createMemphis(){
+  clearMemphis();
+  var container=document.createElement('div');container.className='memphis';container.id='memphisLayer';
+  var cs=getComputedStyle(document.documentElement);
+  var colors=[cs.getPropertyValue('--accent').trim()||'#3B82F6',cs.getPropertyValue('--accent2').trim()||'#10B981'];
+  for(var i=0;i<14;i++){
+    var d=document.createElement('div');d.className='memphis-dot';
+    var size=8+Math.round(Math.random()*56);
+    d.style.width=size+'px';d.style.height=size+'px';
+    d.style.left=Math.round(Math.random()*100)+'%';d.style.top=Math.round(Math.random()*100)+'%';
+    d.style.background=colors[Math.floor(Math.random()*colors.length)];
+    d.style.opacity=0.06;d.style.filter='blur('+ (Math.random()*3).toFixed(1) +'px)';
+    container.appendChild(d);
+  }
+  document.body.appendChild(container);
+  setTimeout(function(){var dots=container.querySelectorAll('.memphis-dot');dots.forEach(function(dd,idx){setTimeout(function(){dd.classList.add('pop')},idx*80)})},80);
+}
+function clearMemphis(){var m=document.getElementById('memphisLayer');if(m)m.remove()}
+function toggleMemphis(){appStats.memphisEnabled=!appStats.memphisEnabled;saveStats();if(appStats.memphisEnabled){createMemphis();showToast('装饰已启用')}else{clearMemphis();showToast('装饰已关闭')}}
+
+document.addEventListener('DOMContentLoaded',function(){
+  // 孟菲斯开关
+  var btn=document.getElementById('memphisToggle');if(btn){btn.addEventListener('click',function(){toggleMemphis();this.classList.toggle('active',appStats.memphisEnabled)})}
+  if(appStats.memphisEnabled)createMemphis();
+
+  // 深色模式按钮
+  var darkBtn=document.getElementById('darkToggle');
+  if(darkBtn){darkBtn.addEventListener('click',function(){
+    var next = (appStats.settings && appStats.settings.theme==='dark') ? 'light' : 'dark';
+    appStats.settings.theme = next; saveStats(); applyTheme(next);
+  });
+    // 按钮样式反映当前
+    if(appStats.settings && appStats.settings.theme==='dark') darkBtn.classList.add('active');
+  }
+
+  // 动画开关与速度
+  var animChk=document.getElementById('animToggle');
+  var animRange=document.getElementById('animSpeed');
+  if(animChk){animChk.checked = !!(appStats.settings && appStats.settings.animEnabled);
+    animChk.addEventListener('change',function(){appStats.settings.animEnabled=this.checked;saveStats();applyAnimationSettings(this.checked, appStats.settings.animSpeed)});
+  }
+  if(animRange){animRange.value = (appStats.settings && appStats.settings.animSpeed)?appStats.settings.animSpeed:0.18;
+    animRange.addEventListener('input',function(){var v=parseFloat(this.value);appStats.settings.animSpeed=v;saveStats();applyAnimationSettings(appStats.settings.animEnabled,v)});
+  }
+
+  // AI 配置按钮
+  var aiBtn=document.getElementById('aiConfigBtn'); if(aiBtn){aiBtn.addEventListener('click',function(){document.getElementById('aiModal').classList.add('show');var k=sessionStorage.getItem('aiApiKey')||'';document.getElementById('aiApiKeyInput').value=k;})}
+
+  // AI modal actions
+  window.saveAIApiKey = function(){var v=document.getElementById('aiApiKeyInput').value.trim();if(v)sessionStorage.setItem('aiApiKey',v);else sessionStorage.removeItem('aiApiKey');document.getElementById('aiModal').classList.remove('show');showToast('已保存（仅会话）')}
+  window.clearAIApiKey = function(){sessionStorage.removeItem('aiApiKey');document.getElementById('aiApiKeyInput').value='';showToast('API Key 已清除（仅会话）')}
+  window.closeAIModal = function(){document.getElementById('aiModal').classList.remove('show')}
+
+  // 导出当前解析 JSON
+  var expBtn = document.getElementById('exportParseBtn'); if(expBtn){expBtn.addEventListener('click',function(){
+    var code=document.getElementById('codeInput').value.trim(); if(!code){showToast('无代码可导出');return}
+    var lang=document.getElementById('langSelect').value; try{var parsed = parsePython(code);}catch(e){showToast('解析失败，无法导出');return}
+    var out={parsed:parsed,generatedAt:Date.now(),language:lang};
+    var a=document.createElement('a');a.href='data:application/json;charset=utf-8,'+encodeURIComponent(JSON.stringify(out,null,2));a.download='parsed_code.json';a.click();showToast('解析已导出');
+  })}
+  // 收藏按钮
+  var favBtn = document.getElementById('favoriteBtn'); if(favBtn){favBtn.addEventListener('click',function(){
+    var code=document.getElementById('codeInput').value||''; if(!code){showToast('无代码可收藏');return}
+    var lang=document.getElementById('langSelect').value||'python';
+    var tech=document.getElementById('techDoc').innerHTML||'';
+    var beg=document.getElementById('beginnerDoc').innerHTML||'';
+    var title = (code.split('\n')[0]||'片段').substring(0,80);
+    appStats.favorites = appStats.favorites||[];
+    appStats.favorites.unshift({id:'fav_'+Date.now(),code:code,language:lang,techDocHTML:tech,beginnerDocHTML:beg,title:title,timestamp:Date.now()});
+    if(appStats.favorites.length>200)appStats.favorites.length=200;
+    saveStats(); renderFavoritesUI(); showToast('已收藏');
+  })}
+
+  // 导出 PDF（使用新窗口 + 打印）
+  var exportPdf = document.getElementById('exportPdfBtn'); if(exportPdf){exportPdf.addEventListener('click',function(){
+    var tech=document.getElementById('techDoc').innerHTML||'<p>无内容</p>';
+    var w=window.open('','_blank');
+    var doc = '<!doctype html><html><head><meta charset="utf-8"><title>知识卡片</title><style>body{font-family:Inter,Arial; padding:20px;} .card{max-width:780px;margin:0 auto;} pre{white-space:pre-wrap;}</style></head><body><div class="card">'+tech+'<p style="font-size:12px;color:#666;margin-top:16px">导出时间：'+new Date().toLocaleString()+'</p></div></body></html>';
+    w.document.open(); w.document.write(doc); w.document.close(); setTimeout(function(){w.print();},500);
+  })}
+
+  // 笔记与收藏基础
+  var saveNoteBtn = document.getElementById('saveNoteBtn'); if(saveNoteBtn){saveNoteBtn.addEventListener('click',function(){
+    var desc=document.getElementById('practiceDesc').value||'无描述'; var code=document.getElementById('practiceCode').value||'';
+    // 关联代码哈希以便笔记与代码片段绑定
+    var normalized = normalizeCodeForHash(code||'');
+    var codeHash = normalized? simpleHash(normalized) : null;
+    appStats.notes = appStats.notes || [];
+    appStats.notes.unshift({desc:desc,code:code,timestamp:Date.now(),codeHash:codeHash});
+    if(appStats.notes.length>50)appStats.notes.length=50; saveStats(); renderNotesUI(); showToast('已添加笔记');
+  })}
+  var exportNotesBtn = document.getElementById('exportNotesBtn'); if(exportNotesBtn){exportNotesBtn.addEventListener('click',function(){var data=JSON.stringify(appStats.notes||[],null,2);var a=document.createElement('a');a.href='data:application/json;charset=utf-8,'+encodeURIComponent(data);a.download='notes.json';a.click();showToast('笔记已导出')})}
+
+  renderNotesUI(); renderFavoritesUI();
+});
+
+// ==================== 练习评估：规则评分与风格评分 ====================
+function extractWords(text){return (text||'').toLowerCase().match(/[a-z0-9_\u4e00-\u9fa5]+/g)||[]}
+function evaluatePractice(){
+  var desc = (document.getElementById('practiceDesc').value||'').toLowerCase();
+  var code = document.getElementById('practiceCode').value||'';
+  var lang = document.getElementById('practiceLang').value||'python';
+  var result = {total:0,items:[],suggestions:[],style:{total:0,items:[]}};
+  // 规则评分
+  // 1. 是否定义函数（+20）
+  var hasFunc = false; var funcName='';
+  if(lang==='python'){
+    var m = code.match(/def\s+(\w+)\s*\(([^)]*)\)\s*:/);
+    if(m){hasFunc=true;funcName=m[1];var paramStr=m[2]}
+  }else{
+    var m2 = code.match(/(?:public|private|protected)?\s*(?:static\s+)?[\w<>,\s\[\]]+\s+(\w+)\s*\(([^)]*)\)\s*\{/);
+    if(m2){hasFunc=true;funcName=m2[1];var paramStr=m2[2]}
+  }
+  if(hasFunc){result.total+=20; result.items.push({label:'定义函数',score:20,ok:true});} else {result.items.push({label:'定义函数',score:0,ok:false}); result.suggestions.push('请定义函数并使用合适的函数名');}
+
+  // 2. 函数名包含描述关键词（+20）
+  var descWords = extractWords(desc);
+  var fnMatch=false; if(funcName){for(var i=0;i<descWords.length;i++){if(funcName.toLowerCase().indexOf(descWords[i])!==-1){fnMatch=true;break}}}
+  if(fnMatch){result.total+=20; result.items.push({label:'函数名包含关键词',score:20,ok:true});} else {result.items.push({label:'函数名包含关键词',score:0,ok:false}); result.suggestions.push('函数名建议包含描述中的关键词（如 average、sum 等）');}
+
+  // 3. 参数数量合理（+10）
+  var actualParamCount = 0; if(typeof paramStr==='string'&&paramStr.trim()!==''){actualParamCount = paramStr.split(',').filter(Boolean).length}
+  var expected = null; var numMatch = (desc.match(/\d+/)||[])[0]; if(numMatch) expected = parseInt(numMatch);
+  if(!expected){ // 简单规则: 若描述含 list/array => expect 1
+    if(/list|array|列表/.test(desc)) expected = 1; else expected = null;
+  }
+  var paramScore = 0;
+  if(expected===null){paramScore = 10; result.items.push({label:'参数数量合理',score:paramScore,ok:true});}
+  else { if(Math.abs(actualParamCount-expected)<=1){paramScore=10; result.items.push({label:'参数数量合理',score:10,ok:true});} else {result.items.push({label:'参数数量合理',score:0,ok:false}); result.suggestions.push('参数数量与描述不符（期望 '+expected+'）');} }
+  result.total+=paramScore;
+
+  // 4. 返回值类型（+10）
+  var hasReturn = /return\s+/.test(code);
+  var needNumber = /number|数字|平均|average|sum|count|长度|len\(|max|min|mean/.test(desc);
+  if(hasReturn && needNumber){result.total+=10; result.items.push({label:'返回值类型',score:10,ok:true});} else if(hasReturn){result.items.push({label:'返回值类型',score:5,ok:true}); result.total+=5;} else {result.items.push({label:'返回值类型',score:0,ok:false}); if(needNumber) result.suggestions.push('描述要求返回数值，请确保函数有 return');}
+
+  // 5. 是否有注释（+10）
+  var hasComment = /#|\/\*/.test(code);
+  if(hasComment){result.total+=10; result.items.push({label:'代码注释',score:10,ok:true});} else {result.items.push({label:'代码注释',score:0,ok:false}); result.suggestions.push('建议在关键步骤添加注释');}
+
+  // 6. 代码行数 <=20（+10）
+  var lines = code.split('\n').length;
+  if(lines<=20){result.total+=10; result.items.push({label:'长度限制',score:10,ok:true});} else {result.items.push({label:'长度限制',score:0,ok:false}); result.suggestions.push('函数过长，建议分解为更小的函数（<=20行）');}
+
+  // 7. 语法不报错（尝试 parse）（+10）
+  var syntaxOk=false;
+  try{ var parsed = (lang==='python')?parsePython(code):parseJava(code); if(parsed && parsed.methodName && parsed.methodName!=='未命名函数' && parsed.methodName!=='未命名方法') syntaxOk=true; }catch(e){}
+  if(syntaxOk){result.total+=10; result.items.push({label:'语法检查',score:10,ok:true});} else {result.items.push({label:'语法检查',score:0,ok:false}); result.suggestions.push('语法可能有错误，请检查缩进与符号');}
+
+  // 8. 循环/递归与描述匹配（+10）
+  var usesLoop = /for\s+|while\s+|\.forEach\(|foreach|循环/.test(code);
+  var needsLoop = /循环|遍历|每个|iterate|loop/.test(desc);
+  var usesRec = funcName && new RegExp(funcName+'\\s*\\(').test(code) && /递归|递归实现|recursive/.test(desc);
+  if((needsLoop && usesLoop) || usesRec){result.total+=10; result.items.push({label:'循环/递归匹配',score:10,ok:true});} else {result.items.push({label:'循环/递归匹配',score:0,ok:!needsLoop}); if(needsLoop) result.suggestions.push('描述要求使用循环/遍历，请确保包含循环逻辑');}
+
+  // 风格评分
+  // a) 变量命名规范（+30） - 简单检测变量名样式
+  var varNames = code.match(/\b([a-zA-Z_][a-zA-Z0-9_]*)\b/g)||[]; varNames = varNames.filter(function(n){return !['def','return','for','if','else','while','class','import','from','public','static','void','int','float','double','String','new','var','let','const'].includes(n)});
+  var goodNames = 0; for(var i=0;i<varNames.length;i++){var nn=varNames[i]; if(/^[a-z]+(_[a-z0-9]+)*$/.test(nn) || /^[a-z]+([A-Z][a-z0-9]+)+$/.test(nn)) goodNames++;}
+  var nameScore = Math.round((varNames.length?goodNames/varNames.length:1)*30);
+  result.style.total += nameScore; result.style.items.push({label:'变量命名规范',score:nameScore});
+
+  // b) 注释（+20）
+  result.style.total += (hasComment?20:0); result.style.items.push({label:'注释覆盖度',score:(hasComment?20:0)});
+
+  // c) 缩进一致（+20）
+  var usesTabs = /\t/.test(code); var usesSpaces = /^ +/m.test(code);
+  var indentScore = (usesTabs && usesSpaces)?0:20; result.style.total += indentScore; result.style.items.push({label:'缩进一致性',score:indentScore});
+
+  // d) 空行分隔逻辑块（+15）
+  var blankBlocks = (code.match(/\n\s*\n/g)||[]).length; var blankScore = Math.min(15, blankBlocks*5); result.style.total += blankScore; result.style.items.push({label:'空行分隔',score:blankScore});
+
+  // e) 单行长度（+15）
+  var longLines = code.split('\n').filter(function(l){return l.length>80}).length; var lineScore = Math.max(0, 15 - Math.min(15, longLines*3)); result.style.total += lineScore; result.style.items.push({label:'单行长度',score:lineScore});
+
+  // 总结建议
+  if(result.total<60) result.suggestions.push('功能评分偏低，优先修正语法与函数结构');
+  if(result.style.total<60) result.suggestions.push('风格评分偏低，建议统一命名与缩进，并增加注释');
+
+  // 输出到 UI
+  var out = document.getElementById('practiceResult'); if(!out) return result;
+  var html = '<div style="display:flex;gap:12px;align-items:flex-start"><div style="font-size:28px;font-weight:700">'+result.total+'</div><div><div style="font-weight:700">匹配度评分（0-100）</div>';
+  html += '<ul style="margin:8px 0">'+result.items.map(function(it){return '<li>'+it.label+': <strong style="color:'+ (it.ok?'#10B981':'#EF4444')+'">'+it.score+'</strong></li>'}).join('')+'</ul>';
+  html += '<div style="font-weight:700;margin-top:6px">风格分：'+result.style.total+'</div><ul style="margin:8px 0">'+result.style.items.map(function(it){return '<li>'+it.label+': <strong>'+it.score+'</strong></li>'}).join('')+'</ul>';
+  if(result.suggestions.length>0) html += '<div style="margin-top:8px;color:var(--text2)"><strong>建议：</strong><ul>'+result.suggestions.map(function(s){return '<li>'+escapeHtml(s)+'</li>'}).join('')+'</ul></div>';
+  html += '</div></div>';
+  out.innerHTML = html;
+  return result;
+}
+
+document.getElementById('evalPracticeBtn').addEventListener('click',function(){
+  var r=evaluatePractice();
+  // 将练习评估计入单独统计 practiceCount，并记录历史以供趋势/平均分
+  appStats.practiceCount = (appStats.practiceCount||0) + 1;
+  if(!appStats.practiceHistory) appStats.practiceHistory = [];
+  appStats.practiceHistory.unshift({score:r.total,timestamp:Date.now(),lang:document.getElementById('practiceLang').value,desc:document.getElementById('practiceDesc').value||''});
+  if(appStats.practiceHistory.length>200) appStats.practiceHistory.length=200;
+  saveStats(); renderAllUI();
+  if(r.total>=80) showToast('评估完成：表现良好'); else showToast('评估完成');
+});
+document.getElementById('aiEvalBtn').addEventListener('click',function(){var k=sessionStorage.getItem('aiApiKey'); if(!k){showToast('未配置 AI Key（会话）'); return} showToast('调用 Deepseek 进行深度评估（占位）');});
+
+// 显示更多（显示/隐藏 practice 中的额外卡片）
+document.getElementById('showMoreBtn').addEventListener('click',function(){
+  var extras = document.querySelectorAll('#panelPractice .insight-card.extra');
+  var anyHidden = Array.from(extras).some(function(e){return e.style.display==='none' || getComputedStyle(e).display==='none'});
+  extras.forEach(function(e){ e.style.display = anyHidden ? 'block' : 'none'; });
+  this.textContent = anyHidden ? '隐藏更多' : '显示更多';
+});
+
+// Pyodide lazy loader and runner
+var pyodideReady = false; var pyodide = null; var pyodideLoading = false;
+async function ensurePyodide(){
+  if(pyodideReady) return pyodide;
+  if(pyodideLoading) {
+    // wait until ready
+    while(!pyodideReady) await new Promise(r=>setTimeout(r,200));
+    return pyodide;
+  }
+  pyodideLoading = true;
+  showToast('正在加载 Pyodide（较大）…');
+  try{
+    if(typeof loadPyodide !== 'function'){
+      // load script
+      await new Promise(function(resolve,reject){
+        var s = document.createElement('script');
+        s.src = 'https://cdn.jsdelivr.net/pyodide/v0.23.4/full/pyodide.js';
+        s.onload = resolve; s.onerror = reject; document.head.appendChild(s);
+      });
+    }
+    pyodide = await loadPyodide({indexURL:'https://cdn.jsdelivr.net/pyodide/v0.23.4/full/'});
+    pyodideReady = true; showToast('Pyodide 已加载'); return pyodide;
+  }catch(e){showToast('Pyodide 加载失败：'+(e&&e.message)); throw e;} finally{pyodideLoading=false}
+}
+
+// Run user code via pyodide and optionally call function with args
+async function runCodeWithPyodide(code, funcName, args){
+  try{
+    var p = await ensurePyodide();
+    // prepare a fresh globals to avoid pollution
+    var wrapper = ""+
+      "_user_ns = {}\n"+
+      "import sys\n"+
+      "import builtins\n"+
+      "def _run_user():\n"+
+      "    globals().update(_user_ns)\n"+
+      code.split('\n').map(function(l){return '    '+l}).join('\n') + "\n"+
+      "\n"+
+      "_run_user()\n";
+    // run code
+    await p.runPythonAsync(wrapper);
+    if(funcName){
+      // call function
+      var callCode = 'result = '+funcName+'(' + (args||[]).map(function(a){return JSON.stringify(a)}).join(',') + ')';
+      var res = p.runPython(callCode + '\nresult');
+      return {ok:true,return:res};
+    }
+    return {ok:true,return:null};
+  }catch(err){return {ok:false,error:err.toString()}};
+}
+
+// Run Pyodide on practice code and display result
+document.getElementById('runPyBtn').addEventListener('click',async function(){
+  var code = document.getElementById('practiceCode').value||'';
+  if(!code){showToast('代码为空');return}
+  this.disabled = true; try{
+    var r = await runCodeWithPyodide(code,null,[]);
+    if(r.ok){ showToast('代码执行成功'); document.getElementById('practiceResult').innerHTML = '<pre style="white-space:pre-wrap;background:var(--surface2);padding:8px;border-radius:6px">执行成功</pre>'; }
+    else { document.getElementById('practiceResult').innerHTML = '<pre style="white-space:pre-wrap;background:var(--surface2);padding:8px;border-radius:6px;color:#EF4444">错误：'+escapeHtml(r.error)+'</pre>'; }
+  }catch(e){showToast('运行异常') } finally{this.disabled=false}
+});
+
+// ==================== 每日挑战：题库、初始化、判定与历史 ====================
+const CHALLENGE_BANK = [
+  {id:'ch_fact',title:'实现阶乘',desc:'实现函数 factorial(n)，返回 n 的阶乘，例如 factorial(5) == 120。',lang:'python',sigRegex:new RegExp('def\\s+factorial\\s*\\(','i'),checkRegex:new RegExp('return\\s+\\w+\\s*\\*\\s*factorial\\s*\\(','i')},
+  {id:'ch_prime',title:'判断素数',desc:'实现函数 is_prime(n)，返回 True 如果 n 是素数。',lang:'python',sigRegex:new RegExp('def\\s+is_prime\\s*\\(','i'),checkRegex:new RegExp('return\\s+.*','i')},
+  {id:'ch_reverse',title:'反转字符串',desc:'实现函数 reverse_str(s)，返回字符串 s 的反转。',lang:'python',sigRegex:new RegExp('def\\s+reverse_str\\s*\\(','i'),checkRegex:new RegExp('return\\s+.*\\[\\s*:\\s*-\\s*1\\]|\\.reverse\\(|for\\s+.*in\\s+range\\(','i')},
+  {id:'ch_max',title:'列表最大值',desc:'实现函数 max_in_list(arr)，返回列表中的最大值。',lang:'python',sigRegex:new RegExp('def\\s+max_in_list\\s*\\(','i'),checkRegex:new RegExp('return\\s+max\\(|for\\s+.*if\\s+.*>\\s*','i')},
+  {id:'ch_fib',title:'斐波那契数列',desc:'实现函数 fib(n)，返回第 n 个斐波那契数（0 或 1 索引请在要求中说明）。',lang:'python',sigRegex:new RegExp('def\\s+fib\\s*\\(','i'),checkRegex:new RegExp('return\\s+fib\\s*\\(|for\\s+.*in\\s+range\\(|while\\s+','i')}
+];
+
+function getTodayKey(){var d=new Date();return d.getFullYear()+'-'+(d.getMonth()+1)+'-'+d.getDate()}
+
+function initDailyChallenge(){
+  appStats.challengeHistory = appStats.challengeHistory||[];
+  var lastDate = localStorage.getItem('dailyChallengeDate');
+  var today = getTodayKey();
+  var current = localStorage.getItem('dailyChallengeCurrent');
+  if(lastDate !== today || !current){
+    // pick random
+    var idx = Math.floor(Math.random()*CHALLENGE_BANK.length);
+    current = CHALLENGE_BANK[idx].id;
+    localStorage.setItem('dailyChallengeCurrent', current);
+    localStorage.setItem('dailyChallengeDate', today);
+  }
+  var chal = CHALLENGE_BANK.find(function(c){return c.id===current}) || CHALLENGE_BANK[0];
+  var el = document.getElementById('dailyChallenge');
+  if(el){
+    el.innerHTML = '<div style="font-weight:700">今日挑战：'+escapeHtml(chal.title)+'</div><div style="color:var(--text2);margin-top:6px">'+escapeHtml(chal.desc)+'</div><textarea id="challengeCodeInput" placeholder="在此编写代码" style="width:100%;min-height:140px;margin-top:8px;padding:10px;border:1px solid var(--border);border-radius:8px;background:var(--surface2)"></textarea>';
+  }
+}
+
+// Simple runtime test cases for some challenges
+var CHALLENGE_TESTS = {
+  ch_fact: [{args:[5],expected:120}],
+  ch_fib: [{args:[5],expected:5}],
+  ch_reverse: [{args:["abc"],expected:"cba"}],
+  ch_max: [{args:[[1,3,2]],expected:3}],
+  ch_prime: [{args:[7],expected:true},{args:[8],expected:false}]
+};
+
+function evaluateChallengeSubmission(){
+  var current = localStorage.getItem('dailyChallengeCurrent');
+  var chal = CHALLENGE_BANK.find(function(c){return c.id===current});
+  if(!chal){showToast('今日挑战未初始化');return}
+  var code = (document.getElementById('challengeCodeInput')||{value:''}).value||'';
+  var passed = false; var reasons = [];
+  try{
+    if(chal.sigRegex && !chal.sigRegex.test(code)) reasons.push('函数签名不匹配');
+    if(chal.checkRegex && !chal.checkRegex.test(code)) reasons.push('未检测到关键逻辑或返回语句');
+    passed = reasons.length===0;
+  }catch(e){reasons.push('判定错误');}
+  // store history
+  appStats.challengeHistory.unshift({date:getTodayKey(),id:chal.id,title:chal.title,passed:passed,timestamp:Date.now()});
+  if(appStats.challengeHistory.length>200)appStats.challengeHistory.length=200;
+  saveStats(); renderChallengeHistoryUI();
+  var out = document.getElementById('challengeResult'); if(out){out.innerHTML = '<div style="font-weight:700">'+(passed?'通过 ✅':'未通过 ✖')+'</div>'+(reasons.length>0?('<div style="color:var(--text2);margin-top:6px"><strong>原因：</strong><ul>'+(reasons.map(function(r){return '<li>'+escapeHtml(r)+'</li>'}).join(''))+'</ul></div>'):(''))}
+  showToast('提交已记录');
+}
+
+function renderChallengeHistoryUI(){
+  var h = appStats.challengeHistory||[];
+  var el = document.getElementById('challengeHistory'); if(!el) return;
+  if(h.length===0){el.innerHTML='暂无挑战记录';return}
+  var html = '<ul style="list-style:none;padding-left:0">';
+  for(var i=0;i<h.length;i++){var it=h[i];html+='<li style="padding:6px 0;border-bottom:1px solid var(--border)"><strong>'+escapeHtml(it.title)+'</strong> <span style="float:right;color:'+ (it.passed? 'var(--success)':'var(--error)')+'">'+(it.passed?'通过':'未通过')+'</span><div style="font-size:12px;color:var(--text2)">'+new Date(it.timestamp).toLocaleString()+'</div></li>'}
+  html += '</ul>';
+  el.innerHTML = html;
+}
+
+// bind buttons
+var submitChallengeBtn = document.getElementById('submitChallengeBtn'); if(submitChallengeBtn){submitChallengeBtn.addEventListener('click',function(){evaluateChallengeSubmission()})}
+var viewChallengeHistoryBtn = document.getElementById('viewChallengeHistoryBtn'); if(viewChallengeHistoryBtn){viewChallengeHistoryBtn.addEventListener('click',function(){renderChallengeHistoryUI(); showToast('已刷新挑战记录')})}
+
+// initialize daily challenge now
+initDailyChallenge(); renderChallengeHistoryUI();
 function fillHistoryByIdx(idx){
   var h=appStats.history[idx];
   if(!h)return;
-  document.getElementById('codeInput').value=h.code;
+  var codeEl=document.getElementById('codeInput');
+  codeEl.value=h.code;
   document.getElementById('langSelect').value=h.language||'java';
+  // 聚焦并高亮输入区，短暂动画提示用户已回填
+  codeEl.classList.add('pulse-highlight');
+  try{codeEl.focus();codeEl.setSelectionRange(0,0);}catch(e){}
+  setTimeout(function(){codeEl.classList.remove('pulse-highlight')},1800);
+  // 触发解析
   document.getElementById('parseBtn').click();
+}
+
+// 切换面板：dashboard / doc / badges
+function switchPanel(panel){
+  var top=document.getElementById('sectionTop');
+  var core=document.getElementById('sectionCore');
+  var bottom=document.getElementById('sectionBottom');
+  var insight=document.querySelector('.insight-row');
+  if(panel==='dashboard'){
+    if(top)top.style.display='grid';
+    if(insight)insight.style.display='grid';
+    if(core)core.style.display='grid';
+    if(bottom)bottom.style.display='grid';
+  }else if(panel==='doc'){
+    if(top)top.style.display='none';
+    if(insight)insight.style.display='none';
+    if(core)core.style.display='grid';
+    if(bottom)bottom.style.display='none';
+  }else if(panel==='badges'){
+    if(top)top.style.display='none';
+    if(insight)insight.style.display='none';
+    if(core)core.style.display='none';
+    if(bottom)bottom.style.display='grid';
+  }
+  else if(panel==='history'){
+    if(top)top.style.display='none';
+    if(insight)insight.style.display='none';
+    if(core)core.style.display='none';
+    if(bottom)bottom.style.display='none';
+  }
+  // 显示/隐藏主要面板区（解析 / 练习 / 徽章）
+  var panelParseEl=document.getElementById('panelParse');
+  var panelPracticeEl=document.getElementById('panelPractice');
+  var panelBadgesEl=document.getElementById('panelBadges');
+  var panelHistoryEl=document.getElementById('panelHistory');
+  if(panelParseEl)panelParseEl.style.display = (panel==='dashboard' || panel==='doc') ? 'block' : 'none';
+  if(panelPracticeEl)panelPracticeEl.style.display = (panel==='practice') ? 'block' : 'none';
+  if(panelBadgesEl)panelBadgesEl.style.display = (panel==='badges') ? 'block' : 'none';
+  if(panelHistoryEl)panelHistoryEl.style.display = (panel==='history') ? 'block' : 'none';
+  // 更新 nav 激活样式（支持 practice）
+  document.querySelectorAll('.nav-item').forEach(function(n){
+    n.classList.toggle('active', n.dataset.nav===panel || (panel==='dashboard' && n.dataset.nav==='dashboard'))
+  });
+  var m=document.querySelector('.main'); if(m)m.scrollTop=0;
+  // 小屏下切换面板时自动收起侧栏
+  if(document.body.classList.contains('sidebar-open')){
+    document.body.classList.remove('sidebar-open');
+  }
+  // 切到练习时自动聚焦输入框
+  if(panel==='practice'){
+    // 自动聚焦代码输入，并在练习模式隐藏装饰
+    setTimeout(function(){try{document.getElementById('practiceCode').focus()}catch(e){}},180);
+    // 隐藏装饰层（进入练习模式）
+    clearMemphis();
+  } else {
+    // 离开练习模式时若用户开启装饰则恢复
+    if(appStats.memphisEnabled) createMemphis();
+  }
 }
 
 function scrollToSection(section){
@@ -575,6 +1502,21 @@ function scrollToSection(section){
   var nav=document.querySelector('.nav-item[data-nav="'+(section==='top'?'dashboard':section==='core'?'doc':'badges')+'"]');
   if(nav)nav.classList.add('active');
 }
+// 关闭侧栏（用于遮罩点击）
+function closeSidebar(){document.body.classList.remove('sidebar-open')}
+
+// 绑定侧栏开关
+document.getElementById('sidebarToggle').addEventListener('click',function(e){
+  document.body.classList.toggle('sidebar-open');
+});
+
+// 点击遮罩关闭侧栏（如果存在）
+var ob=document.getElementById('overlayBackdrop'); if(ob){ob.addEventListener('click',closeSidebar)}
+// 下拉更多面板切换
+document.getElementById('moreToggle').addEventListener('click',function(e){
+  e.stopPropagation();var p=document.getElementById('morePanel');if(!p)return; p.style.display=(p.style.display==='none'?'block':'none');
+});
+document.addEventListener('click',function(){var p=document.getElementById('morePanel'); if(p) p.style.display='none'});
 
 function openModal(){
   var uk=Object.keys(appStats.metaphorHits).length;
@@ -590,6 +1532,25 @@ function openModal(){
   document.getElementById('statsModal').classList.add('show');
 }
 
+// 清空历史
+['clearHistoryBtn','clearHistoryBtn2'].forEach(function(id){
+  var el=document.getElementById(id); if(!el) return;
+  el.addEventListener('click',function(){
+    if(!confirm('确认清空最近解析历史吗？此操作不可撤销。'))return;
+    appStats.history=[];saveStats();renderAllUI();showToast('历史已清空');
+  });
+});
+
+// 相对时间
+function timeAgo(ts){
+  var s=Math.floor((Date.now()-ts)/1000);
+  if(s<10)return '刚刚';
+  if(s<60)return s+' 秒前';
+  var m=Math.floor(s/60); if(m<60)return m+' 分钟前';
+  var h=Math.floor(m/60); if(h<24)return h+' 小时前';
+  var d=Math.floor(h/24); return d+' 天前';
+}
+
 function closeModal(){document.getElementById('statsModal').classList.remove('show')}
 
 document.getElementById('statsModal').addEventListener('click',function(e){if(e.target===this)closeModal()});
@@ -600,10 +1561,10 @@ function showToast(msg){
 }
 
 // ==================== 渲染说明书 ====================
-function renderTechDoc(parsed,lang){
+function renderTechDoc(parsed,lang,stmtEx){
+  if(!stmtEx)stmtEx=[];
   var paramsDisplay=parsed.parameters.map(function(p){return p.type+' '+p.name}).join(', ');
   var sig=lang==='java'?parsed.returnType+' '+parsed.methodName+'('+paramsDisplay+')':'def '+parsed.methodName+'('+paramsDisplay+')'+(parsed.returnType&&parsed.returnType!=='void'?' -> '+parsed.returnType:'');
-  var stmtEx=generateStatementExplanation(parsed.rawCode,lang);
   var health=calculateHealthScore(parsed.rawCode,parsed.parameters);
   var hhtml='<div class="detail-section"><h4>代码健康度</h4><div style="display:flex;align-items:center;gap:12px"><span style="font-size:28px;font-weight:700;color:'+(health.level==='good'?'var(--success)':health.level==='warn'?'var(--warning)':'var(--error)')+'">'+health.score+'</span><span style="font-size:12px;color:var(--text2)">'+(health.level==='good'?'健康':health.level==='warn'?'一般':'需优化')+'</span></div><div class="health-bar-track"><div class="health-bar-fill '+health.level+'" style="width:'+health.score+'%"></div></div>';
   if(health.deductions.length>0){hhtml+='<div class="health-metrics">';for(var d=0;d<health.deductions.length;d++)hhtml+='<span>'+health.deductions[d].label+': '+health.deductions[d].value+'</span>';hhtml+='</div>'}
@@ -611,9 +1572,15 @@ function renderTechDoc(parsed,lang){
   var ehtml='';
   if(stmtEx.length>0){ehtml='<div class="detail-section"><h4>代码说明</h4>';for(var si=0;si<stmtEx.length;si++)ehtml+='<p style="margin-bottom:4px">'+escapeHtml(stmtEx[si])+'</p>';ehtml+='</div>'}
   var html='<div class="detail-section"><h4>函数签名</h4><pre>'+escapeHtml(sig)+'</pre></div>'+hhtml+ehtml;
-  html+='<div class="detail-section"><h4>参数列表</h4><table><tr><th>#</th><th>参数名</th><th>类型</th></tr>';
-  if(parsed.parameters.length>0)for(var pi=0;pi<parsed.parameters.length;pi++)html+='<tr><td>'+(pi+1)+'</td><td><code>'+escapeHtml(parsed.parameters[pi].name)+'</code></td><td>'+escapeHtml(parsed.parameters[pi].type)+'</td></tr>';
-  else html+='<tr><td colspan="3">无参数</td></tr>';
+  html+='<div class="detail-section"><h4>参数列表</h4><table><tr><th>#</th><th>参数名</th><th>类型</th><th>默认值</th><th>说明</th><th>示例</th></tr>';
+  if(parsed.parameters.length>0){
+    for(var pi=0;pi<parsed.parameters.length;pi++){
+      var p=parsed.parameters[pi];
+      var meta=generateParamMeta(p.name,p.type,p.default);
+      var defDisplay=p.default?escapeHtml(p.default):'-';
+      html+='<tr><td>'+(pi+1)+'</td><td><code>'+escapeHtml(p.name)+'</code></td><td>'+escapeHtml(p.type||'Any')+'</td><td>'+defDisplay+'</td><td>'+escapeHtml(meta.desc)+'</td><td><code>'+escapeHtml(meta.example)+'</code></td></tr>';
+    }
+  }else html+='<tr><td colspan="6">无参数</td></tr>';
   html+='</table></div>';
   html+='<div class="detail-section"><h4>返回值</h4><p>'+escapeHtml(parsed.returnType||'void')+'</p></div>';
   html+='<div class="detail-section"><h4>依赖</h4><ul>'+(parsed.dependencies.length>0?parsed.dependencies.map(function(d){return'<li>'+escapeHtml(d)+'</li>'}).join(''):'<li>无外部依赖</li>')+'</ul></div>';
@@ -623,20 +1590,46 @@ function renderTechDoc(parsed,lang){
   document.getElementById('beginnerDoc').style.display='none';
 }
 
-function renderBeginnerDoc(parsed,lang,matchResult){
+function renderBeginnerDoc(parsed,lang,matchResult,stmtEx){
+  if(!stmtEx)stmtEx=[];
   var entry=matchResult.entry,name=parsed.methodName,langName=lang==='java'?'Java':'Python',lineCount=parsed.rawCode.split('\n').length;
   var paramDesc=parsed.parameters.length===0?'不需要额外输入':parsed.parameters.map(function(p){return p.name}).join('、');
   var opening='<strong>这个函数就像是在'+escapeHtml(entry.metaphor)+'。</strong>';
   var body=matchResult.matchQuality==='strong'?'当你把'+escapeHtml(entry.inputDesc)+'交给它，它会'+escapeHtml(entry.action)+'。传给它的数据是'+paramDesc+'，最终得到的是'+escapeHtml(entry.outputDesc)+'。':'简单来说，它做的事情就是'+escapeHtml(entry.action)+'。传入'+paramDesc+'，处理后返回结果。';
-  var stmtEx=generateStatementExplanation(parsed.rawCode,lang);
   var bs='';if(stmtEx.length>0){bs='具体来说，'+stmtEx.map(function(e){return e.replace(/。$/,'')}).join('；')+'。'}
   var extra='';if(parsed.dependencies.length>0)extra+='它借用了'+parsed.dependencies.length+'个外部工具：'+parsed.dependencies.slice(0,3).map(escapeHtml).join('、')+'。';
   if(parsed.hasTryCatch)extra+='内置了错误防护，出问题不会崩溃。';
   var meta=langName+' 代码片段 &middot; '+lineCount+' 行';
   var html='<div class="narrative-box"><p style="margin-bottom:12px">'+opening+'</p><p style="margin-bottom:12px">'+body+'</p>'+(bs?'<p style="margin-bottom:12px">'+bs+'</p>':'')+(extra?'<p style="margin-bottom:12px;color:var(--text2);font-size:12px">'+extra+'</p>':'')+'</div><p style="margin-top:8px;font-size:11px;color:var(--text2)">'+meta+'</p>';
   document.getElementById('beginnerDoc').innerHTML=html;
-  document.getElementById('techDoc').style.display='none';
-  document.getElementById('beginnerDoc').style.display='block';
+  // 仅更新内容，不切换可见性（由标签控制显示），避免解析后默认切换到小白版
+  // 可通过标签切换或解析后显式设置显示逻辑
+}
+
+// 生成参数说明与示例
+function generateParamMeta(name,type,defaultVal){
+  var n=name.toLowerCase(); var t=(type||'').toLowerCase();
+  var example='示例';
+  // 优先使用默认值（若存在）并格式化为展示字符串
+  if(defaultVal!==undefined && defaultVal!==null){
+    var dv=String(defaultVal).trim();
+    // 保持字符串引号，如果用户写了字符串默认值则保留
+    example=dv;
+  } else if(/^(?:int|long|short|byte|number|count|size|age|index|id)$/.test(t) || /int|long|number|count|size|age|index|id/.test(n)){
+    example='1001';
+  } else if(/^(?:str|string|char)$/.test(t) || /name|user|username|str|string|text/.test(n)){
+    example='"alice"';
+  } else if(/^(?:bool|boolean)$/.test(t) || /^(?:flag|is_)/.test(n) || /bool|true|false/.test(t)){
+    example='True';
+  } else if(/list|array|vec/.test(n) || /list|array/.test(t)){
+    example='[1, 2]';
+  } else {
+    example='示例值';
+  }
+  var desc='参数 '+name+'，示例：'+example;
+  if(/id/.test(n))desc='用户 ID，例如 1001';
+  if(/name|user/.test(n))desc='用户名，例如 "alice"';
+  return {example:example,desc:desc};
 }
 
 // ==================== 事件绑定 ====================
@@ -646,20 +1639,33 @@ document.getElementById('parseBtn').addEventListener('click',function(){
   var lang=document.getElementById('langSelect').value;
   var loading=document.getElementById('loadingIndicator');
   loading.style.display='block';
-  var start=performance.now();
   setTimeout(function(){
+    var parseStart=performance.now();
     try{
       var parsed=lang==='java'?parseJava(code):parsePython(code);
       var match=matchMetaphorEntry(code,parsed);
       var patterns=detectPatterns(parsed,code);
-      renderTechDoc(parsed,lang);
-      renderBeginnerDoc(parsed,lang,match);
-      var duration=Math.round(performance.now()-start);
-      recordParse(lang,duration,code,match.firstKeyword,patterns);
-      if(typeof Prism!=='undefined')Prism.highlightAll();
+      var stmtEx=generateStatementExplanation(parsed.rawCode,lang);
+        renderTechDoc(parsed,lang,stmtEx);
+        renderBeginnerDoc(parsed,lang,match,stmtEx);
+        // 解析结果仅在说明书面板显示；默认切换到技术版（Tech）以满足优先展示解析细节的需求
+        switchPanel('doc');
+        try{
+          // 确保技术版可见、小白版隐藏，并把标签状态设为 tech
+          document.getElementById('techDoc').style.display='block';
+          document.getElementById('beginnerDoc').style.display='none';
+          document.querySelectorAll('.tab').forEach(function(t){t.classList.remove('active')});
+          var techTab = document.querySelector('.tab[data-tab="tech"]'); if(techTab) techTab.classList.add('active');
+        }catch(e){}
+      var duration=Math.round(performance.now()-parseStart);
+      recordParse(lang,duration,code,match.firstKeyword,patterns,parsed.methodName);
+      try{ showToast('解析完成'); }catch(e){}
     }catch(e){
       document.getElementById('techDoc').innerHTML='<div style="color:var(--error)">代码的意图尚不明朗，请检查输入</div>';
       document.getElementById('beginnerDoc').innerHTML='<div style="color:var(--error)">无法生成解释</div>';
+      // 解析失败则重置连续成功计数
+      try{appStats.consecutiveSuccess=0;appStats.lastCodeHash=null;saveStats()}catch(ex){}
+      showToast('解析失败，连胜已重置');
     }finally{loading.style.display='none'}
   },150);
 });
@@ -674,7 +1680,7 @@ document.getElementById('copyTechBtn').addEventListener('click',function(){
 document.getElementById('exportImgBtn').addEventListener('click',function(){
   var doc=document.getElementById('techDoc');
   if(typeof html2canvas==='undefined'){showToast('请稍候再试');return}
-  html2canvas(doc,{scale:2,backgroundColor:'#0A0F1A'}).then(function(c){
+  html2canvas(doc,{scale:2,backgroundColor:'#FFFFFF'}).then(function(c){
     var a=document.createElement('a');a.download='code_doc.png';a.href=c.toDataURL();a.click();showToast('卡片已导出');
   }).catch(function(){showToast('导出失败')});
 });
@@ -684,6 +1690,42 @@ document.getElementById('fullStatsBtn').addEventListener('click',openModal);
 document.getElementById('logoutBtn').addEventListener('click',function(){
   localStorage.removeItem('codeDocStats');location.reload();
 });
+
+// --- 临时自测开关: 在 URL 添加 ?runHashTest=1 将自动运行哈希连胜测试并显示结果 ---
+function runHashTest(){
+  try{
+    var codes = [
+      "def add(a:int,b:int)->int:\n  \"\"\"示例\"\"\"\n  return a+b",
+      "def add(x:int,y:int)->int:\n  return x+y",
+      "def add(a:int,b:int=0)->int:\n  return a+b"
+    ];
+    // reset stats for a clean run
+    appStats.consecutiveSuccess=0; appStats.lastCodeHash=null;
+    var results = [];
+    for(var i=0;i<codes.length;i++){
+      var c=codes[i];
+      var lang='python';
+      var parsed = parsePython(c);
+      var patterns = detectPatterns(parsed,c);
+      var match = matchMetaphorEntry(c,parsed);
+      var stmtEx = generateStatementExplanation(parsed.rawCode,lang);
+      // render one-off (do not overwrite user's view) but still record
+      var duration = 1;
+      recordParse(lang,duration,c,match.firstKeyword,patterns,parsed.methodName);
+      results.push({i:i+1,consecutive:appStats.consecutiveSuccess,lastHash:appStats.lastCodeHash});
+    }
+    // render results banner
+    var el = document.createElement('div'); el.id='hashTestResult'; el.style.position='fixed'; el.style.left='10px'; el.style.top='10px'; el.style.zIndex=9999; el.style.backgroundColor='rgba(0,0,0,0.85)'; el.style.color='#fff'; el.style.padding='10px 14px'; el.style.borderRadius='6px'; el.style.fontSize='13px';
+    el.innerText = 'HashTest 完成 — 连胜: ' + (appStats.consecutiveSuccess||0) + '\n最后哈希: ' + (appStats.lastCodeHash||'none') + '\n总解析数: '+(appStats.total||0);
+    document.body.appendChild(el);
+    // also persist
+    saveStats(); renderAllUI();
+    return results;
+  }catch(e){ console.error('runHashTest err',e); return null }
+}
+if(window.location.search && window.location.search.indexOf('runHashTest=1')!==-1){
+  window.addEventListener('load',function(){ setTimeout(runHashTest,200); });
+}
 
 document.querySelectorAll('.tab').forEach(function(tab){
   tab.addEventListener('click',function(){
@@ -701,9 +1743,39 @@ document.getElementById('langSelect').addEventListener('change',function(){
 document.getElementById('codeInput').addEventListener('keydown',function(e){
   if((e.ctrlKey||e.metaKey)&&e.key==='Enter'){e.preventDefault();document.getElementById('parseBtn').click()}
 });
+// 绑定顶部示例按钮
+var _sbtn = document.getElementById('sampleRunBtn'); if(_sbtn){ _sbtn.addEventListener('click', function(){ try{ localStorage.setItem('seenOnboarding','1'); fillSampleAndRun(); }catch(e){} }); }
 
 loadStats();
-if(typeof Prism!=='undefined')Prism.highlightAll();
+
+// 绑定快速解析卡的按钮
+var _qbtn = document.getElementById('quickParseBtn'); if(_qbtn){ _qbtn.addEventListener('click', function(){ try{
+  var code = document.getElementById('quickCode').value||''; if(!code){ showToast('请先输入代码或点击示例'); return }
+  // 将内容回填到主解析面板，并触发解析
+  document.getElementById('codeInput').value = code;
+  var ql = document.getElementById('quickLang'); if(ql) document.getElementById('langSelect').value = ql.value;
+  document.getElementById('parseBtn').click();
+}catch(e){} }); }
+var _qs = document.getElementById('quickSampleBtn'); if(_qs){ _qs.addEventListener('click', function(){ try{ document.getElementById('quickCode').value = SAMPLE_CODE; document.getElementById('quickLang').value='python'; document.getElementById('quickParseBtn').click(); }catch(e){} }); }
+
+// 绑定文档区域的示例按钮
+var ts = document.getElementById('techSampleBtn'); if(ts){ ts.addEventListener('click', function(){ fillSampleAndRun(); }); }
+var bs = document.getElementById('beginnerSampleBtn'); if(bs){ bs.addEventListener('click', function(){ fillSampleAndRun(); }); }
+
+// 实时摘要（防抖 500ms） for quickCode
+var quickDebounceTimer=null;
+function renderQuickSummary(code, lang){
+  var out = document.getElementById('quickSummary'); if(!out) return;
+  try{
+    var parsed = lang==='java'?parseJava(code):parsePython(code);
+    var name = parsed.methodName||parsed.returnType||'未命名';
+    var params = parsed.parameters?parsed.parameters.length:0;
+    var lines = parsed.rawCode?parsed.rawCode.split('\n').length: (code?code.split('\n').length:0);
+    var health = (lines<=20?10:5) + (parsed.rawCode && /return\s+/.test(parsed.rawCode)?10:0) + (parsed.rawCode && /def|function|public|static/.test(parsed.rawCode)?10:0);
+    out.innerHTML = '<div><strong>函数</strong>: '+escapeHtml(name)+'</div><div><strong>参数</strong>: '+params+'</div><div><strong>行数</strong>: '+lines+'</div><div style="margin-top:6px"><strong>快速健康度</strong>: '+health+'/30</div>';
+  }catch(e){ out.innerHTML = '<div style="color:var(--text2)">无法解析摘要</div>' }
+}
+var quickArea = document.getElementById('quickCode'); if(quickArea){ quickArea.addEventListener('input', function(){ var code=this.value; var lang=document.getElementById('quickLang')?document.getElementById('quickLang').value:'python'; clearTimeout(quickDebounceTimer); quickDebounceTimer=setTimeout(function(){ renderQuickSummary(code,lang); },500); }); }
 console.log('代码解释器 v3.0 已启动');
 </script>
 </body>

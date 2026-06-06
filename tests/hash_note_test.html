@@ -1,0 +1,112 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8">
+  <title>Hash & Note Test</title>
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <style>
+    body{font-family:Inter,Arial;margin:24px;color:#0b2540}
+    pre{background:#f6f8fb;padding:12px;border-radius:8px}
+    .card{border:1px solid #e6eef7;padding:12px;border-radius:8px;margin-bottom:12px}
+    .ok{color:green} .bad{color:#c53030}
+    button{padding:8px 12px;border-radius:6px;border:1px solid #cbd8e6;background:#fff;cursor:pointer}
+  </style>
+</head>
+<body>
+  <h2>Hash & Note 功能自测</h2>
+  <p>点击下面按钮运行示例：对 3 段相似 Python 代码进行规范化并计算哈希；同时演示 Markdown 渲染。</p>
+  <div style="margin-bottom:12px"><button id="runBtn">运行自测</button></div>
+  <div id="out"></div>
+
+<script>
+// 从 index.html 中提取的函数（独立实现）
+function normalizeCodeForHash(code){
+  if(!code) return '';
+  code = code.replace(/('{3}|\"\"\")([\s\S]*?)\1/gm,''); // 三引号
+  code = code.replace(/#.*$/gm,''); // 注释
+  code = code.replace(/\s+/g,' ');
+  code = code.replace(/(["'])(?:\\.|[^\\\n])*?\1/gm,''); // 字符串字面量
+  try{
+    var imports = [];
+    code = code.replace(/^(?:\s*(?:from|import)\s+[\w_.]+(?:\s+import\s+[\w_,\s*]+)?)$/gim,function(m){ imports.push(m.replace(/\s+/g,' ')); return ''; });
+    if(imports.length>0){ imports = imports.map(function(i){return i.trim()}).sort(); code = imports.join('\n') + '\n' + code; }
+  }catch(e){}
+  code = code.replace(/\s+/g,' ').trim();
+  try{
+    var fnMatch = code.match(/def\s+([A-Za-z_]\w*)/);
+    var fnName = fnMatch?fnMatch[1]:null;
+    var keywords = ['def','return','if','else','elif','for','while','try','except','with','as','class','import','from','in','and','or','not','is','lambda','async','await','pass','break','continue','yield','True','False','None'];
+    var idMap = {};
+    var idIdx = 1;
+    code = code.replace(/\b([A-Za-z_]\w*)\b/g,function(m){
+      if(keywords.indexOf(m)!==-1) return m;
+      if(fnName && m===fnName) return m;
+      if(/^[A-Z][A-Za-z0-9_]*$/.test(m)) return m;
+      if(!idMap[m]){ idMap[m] = 'v'+(idIdx++); }
+      return idMap[m];
+    });
+  }catch(e){}
+  return code;
+}
+function simpleHash(str){var h=5381;for(var i=0;i<str.length;i++){h=((h<<5)+h)+str.charCodeAt(i);}return (h>>>0).toString(16)}
+
+function markdownToHtml(md){
+  if(!md) return '';
+  md = md.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+  md = md.replace(/```([\s\S]*?)```/g,function(m,p){return '<pre style="background:#f6f8fb;padding:8px;border-radius:6px"><code>'+p.replace(/&/g,'&amp;')+'</code></pre>'});
+  md = md.replace(/^######\s?(.*)$/gm,'<h6>$1</h6>');
+  md = md.replace(/^#####\s?(.*)$/gm,'<h5>$1</h5>');
+  md = md.replace(/^####\s?(.*)$/gm,'<h4>$1</h4>');
+  md = md.replace(/^###\s?(.*)$/gm,'<h3>$1</h3>');
+  md = md.replace(/^##\s?(.*)$/gm,'<h2>$1</h2>');
+  md = md.replace(/^#\s?(.*)$/gm,'<h1>$1</h1>');
+  md = md.replace(/\*\*(.*?)\*\*/g,'<strong>$1</strong>');
+  md = md.replace(/\*(.*?)\*/g,'<em>$1</em>');
+  md = md.replace(/`([^`]+)`/g,'<code style="background:rgba(0,0,0,0.04);padding:2px 4px;border-radius:4px">$1</code>');
+  md = md.replace(/\[([^\]]+)\]\(([^)]+)\)/g,'<a href="$2" target="_blank" rel="noreferrer noopener">$1</a>');
+  md = md.replace(/(^|\n)[\s]*[-\*]\s+(.+(?:\n|$))/g,function(m,p1,p2){var items = m.trim().split(/\n/).map(function(r){return r.replace(/^[-\*]\s+/,'')});return '<ul>'+items.map(function(it){return '<li>'+it+'</li>'}).join('')+'</ul>';});
+  md = md.replace(/\n{2,}/g,'</p><p>');
+  md = '<p>' + md + '</p>';
+  return md;
+}
+
+// 测试序列
+var testCodes = [
+  "def add(a:int,b:int)->int:\n  \"\"\"示例\"\"\"\n  return a+b",
+  "def add(x:int,y:int)->int:\n  return x+y",
+  "def add(a:int,b:int=0)->int:\n  return a+b"
+];
+
+function runTest(){
+  var out=document.getElementById('out'); out.innerHTML='';
+  var results = [];
+  for(var i=0;i<testCodes.length;i++){
+    var c=testCodes[i];
+    var norm = normalizeCodeForHash(c);
+    var hh = simpleHash(norm);
+    var card = document.createElement('div'); card.className='card';
+    card.innerHTML = '<div style="font-weight:700;margin-bottom:6px">片段 '+(i+1)+'</div>'+
+      '<div style="margin-bottom:6px"><strong>原始代码：</strong><pre>'+escapeHtml(c)+'</pre></div>'+
+      '<div style="margin-bottom:6px"><strong>规范化后：</strong><pre>'+escapeHtml(norm)+'</pre></div>'+
+      '<div><strong>哈希：</strong><code>'+hh+'</code></div>';
+    out.appendChild(card);
+    results.push({norm:norm,hash:hh});
+  }
+  // 比较结果
+  var eq1 = (results[0].hash === results[1].hash);
+  var eq2 = (results[1].hash === results[2].hash);
+  var summary = document.createElement('div'); summary.className='card';
+  summary.innerHTML = '<div style="font-weight:700">结果摘要</div>'+
+    '<div>片段1 与 片段2 是否相等（规范化后哈希）： <span class="'+(eq1?'ok':'bad')+'">'+eq1+'</span></div>'+
+    '<div>片段2 与 片段3 是否相等（规范化后哈希）： <span class="'+(eq2?'ok':'bad')+'">'+eq2+'</span></div>'+
+    '<div style="margin-top:8px"><strong>Markdown 渲染示例：</strong></div>'+
+    '<div style="margin-top:6px">'+markdownToHtml('# 标题\n**粗体** 文本 \n- 项1\n- 项2\n`inline code`')+'</div>';
+  out.appendChild(summary);
+}
+
+function escapeHtml(s){return (s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;')}
+
+document.getElementById('runBtn').addEventListener('click',runTest);
+</script>
+</body>
+</html>
