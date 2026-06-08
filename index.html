@@ -10,6 +10,7 @@
 <script async src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
 <script src="https://cdn.jsdelivr.net/gh/gitbrent/PptxGenJS@3.12.0/dist/pptxgen.bundle.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
+<script async src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
 <style>
 :root{--bg:#F8FAFC;--surface:#FFFFFF;--surface2:#F7FBFF;--border:#E2EDF8;--text:#0F172A;--text2:#64748B;--accent:#3B82F6;--accent2:#10B981;--success:#10B981;--error:#EF4444;--warning:#F59E0B;--radius:12px;--gap:20px;--card-pad:20px;--shadow:0 1px 3px rgba(0,0,0,0.05);--font-title:-apple-system,BlinkMacSystemFont,'Segoe UI','PingFang SC','Microsoft YaHei',sans-serif;--font-body:-apple-system,BlinkMacSystemFont,'Segoe UI','PingFang SC','Microsoft YaHei',sans-serif}
 *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
@@ -153,7 +154,7 @@ body.dark{--bg:#071021;--surface:#071826;--surface2:#0b1220;--border:#123042;--t
   <div class="nav-item" data-panel="history" onclick="switchPanel('history')" tabindex="0"><span class="nav-icon">🕐</span> 历史记录</div>
   <div class="nav-item" data-panel="badges" onclick="switchPanel('badges')" tabindex="0"><span class="nav-icon">🏆</span> 成就</div>
   <div class="nav-item" data-panel="aiDoc" onclick="switchPanel('aiDoc')" tabindex="0"><span class="nav-icon">📄</span> AI 文档</div>
-  <div class="sidebar-footer">v4.5 · 高质导出 · 纯前端<div id="sidebarToday" style="font-size:12px;margin-top:4px;color:var(--accent)"></div></div>
+  <div class="sidebar-footer">v5.0 · 11页PPT · 雷达图 · 单元测试 · 学习路径<div id="sidebarToday" style="font-size:12px;margin-top:4px;color:var(--accent)"></div></div>
 </aside>
 <main class="main" id="mainContent">
 <!-- ===== 仪表盘 ===== -->
@@ -178,7 +179,7 @@ body.dark{--bg:#071021;--surface:#071826;--surface2:#0b1220;--border:#123042;--t
         <div style="display:flex;flex-direction:column;gap:8px">
           <button class="btn" onclick="quickDemoFactorial()" style="justify-content:flex-start">📋 解析示例代码</button>
           <button class="btn" onclick="showHelpModal()" style="justify-content:flex-start">❓ 查看帮助</button>
-          <button class="btn" onclick="exportWord()" style="justify-content:flex-start">📊 导出本周报告</button>
+          <button class="btn" onclick="showPeriodPicker()" style="justify-content:flex-start">📊 导出报告</button>
         </div>
       </div>
       <div class="card"><div class="card-title">🔥 本周最热代码</div><div id="weeklyHotCode"><p style="color:var(--text2)">暂无数据</p></div></div>
@@ -1032,7 +1033,7 @@ document.getElementById('codeInput').addEventListener('keydown',function(e){if((
 // AI 文档面板按钮
 var _ppt=document.getElementById('exportPptBtn');if(_ppt)_ppt.addEventListener('click',exportPpt);
 var _bppt=document.getElementById('batchExportPptBtn');if(_bppt)_bppt.addEventListener('click',batchExportPpt);
-var _word=document.getElementById('exportWordBtn');if(_word)_word.addEventListener('click',exportWord);
+var _word=document.getElementById('exportWordBtn');if(_word)_word.addEventListener('click',showPeriodPicker);
 var _tts=document.getElementById('startTtsBtn');if(_tts)_tts.addEventListener('click',startTts);
 // 新版 AI Key 配置（面板内，仅影响代码练习）
 (function(){var inp=document.getElementById('aiApiKeyInputV4');if(!inp)return;inp.value=sessionStorage.getItem('aiApiKey')||'';document.getElementById('aiSaveBtnV4').addEventListener('click',function(){var v=inp.value.trim();if(v){sessionStorage.setItem('aiApiKey',v);document.getElementById('aiKeyStatusV4').textContent='已保存 ✅';showToast('AI Key 已保存（仅会话）');}else{sessionStorage.removeItem('aiApiKey');document.getElementById('aiKeyStatusV4').textContent='已清除';showToast('AI Key 已清除');}});document.getElementById('aiClearBtnV4').addEventListener('click',function(){inp.value='';sessionStorage.removeItem('aiApiKey');document.getElementById('aiKeyStatusV4').textContent='已清除';showToast('AI Key 已清除');});})();
@@ -1062,7 +1063,7 @@ function generateExampleCall(parsed){
   var args=[];for(var i=0;i<parsed.parameters.length;i++){var p=parsed.parameters[i],t=(p.type||'').toLowerCase();if(/int|long|short|byte|number/.test(t))args.push(String(10+i*7));else if(/str|string|char/.test(t))args.push('"val'+(i+1)+'"');else if(/bool|boolean/.test(t))args.push(i%2===0?'true':'false');else if(/list|array/.test(t))args.push('[1,2,3]');else if(/double|float/.test(t))args.push(String((2.5+i*1.3).toFixed(1)));else args.push('arg'+(i+1));}
   return parsed.methodName+'('+args.join(', ')+')';
 }
-function generateBestPractices(parsed,code){
+function generateBestPractices(parsed,code,language){
   var tips=[];var lines=code.split('\n');if(parsed.parameters.length>3)tips.push('建议将参数封装为对象以减少函数签名复杂度');
   if(lines.length>20)tips.push('函数体较长，考虑拆分为多个职责单一的子函数');
   if(parsed.hasTryCatch)tips.push('异常处理增强了代码的健壮性，建议保持 try-catch 覆盖范围精确');
@@ -1071,15 +1072,398 @@ function generateBestPractices(parsed,code){
   if(parsed.dependencies.length>0)tips.push('合理利用外部依赖可以避免重复造轮子');
   if(tips.length===0)tips.push('代码结构良好，继续保持简洁风格');
   tips.push('为关键逻辑添加单元测试，确保边界条件被覆盖');
-  return tips;
+  var lang=language||'java';var isPy=lang==='python';var fn=parsed.methodName||'func';var params=parsed.parameters||[];
+  var isSimple=lines.length<=8&&params.length<=2&&!/recursion|recursive|factorial|fibonacci|sort|for\s*\(|while\s*\(|try\s*\{|try\s*:/i.test(code);
+  var opt={suggestion:'',originalCode:code,improvedCode:'',optimizationType:''};
+  if(/recursion|recursive|factorial|fibonacci/i.test(code.toLowerCase())&&fn){
+    opt.suggestion='递归可能导致大数据量时栈溢出，建议使用迭代版本';
+    opt.optimizationType='递归→迭代';
+    if(params.length===1){
+      var pn=params[0].name;
+      if(isPy){
+        opt.improvedCode='def '+fn+'_iter('+pn+'):\n    """迭代版本，避免递归栈溢出"""\n    result = 1\n    for i in range(1, '+pn+' + 1):\n        result *= i\n    return result';
+      }else{
+        var rt=(parsed.returnType&&parsed.returnType!=='void'?parsed.returnType+' ':'int ');
+        opt.improvedCode='public '+rt+fn+'_iter('+params.map(function(p){return (p.type||'int')+' '+(p.name||'n')}).join(', ')+') {\n    int result = 1;\n    for (int i = 1; i <= '+pn+'; i++) {\n        result *= i;\n    }\n    return result;\n}';
+      }
+    }
+  }else if(params.length>3){
+    opt.suggestion='参数过多（'+params.length+'个），建议封装为参数对象';
+    opt.optimizationType='参数重构';
+    if(isPy){
+      var cn=fn.charAt(0).toUpperCase()+fn.slice(1);
+      opt.improvedCode='from dataclasses import dataclass\n\n@dataclass\nclass '+cn+'Params:\n'+params.map(function(p){return '    '+(p.name||'arg')+': '+(p.type||'object');}).join('\n')+'\n\ndef '+fn+'(params: '+cn+'Params)'+(parsed.returnType&&parsed.returnType!=='void'?' -> '+parsed.returnType:'')+':\n    # 使用 params.'+params[0].name+' 等属性\n    pass';
+    }else{
+      var objName=fn.charAt(0).toUpperCase()+fn.slice(1)+'Params';
+      opt.improvedCode='class '+objName+' {\n'+params.map(function(p){return '    private '+(p.type||'Object')+' '+(p.name||'arg')+';'}).join('\n')+'\n    // getters & setters\n}\n\n'+fn+'('+objName+' params) {\n    // 使用 params.get'+fn.charAt(0).toUpperCase()+fn.slice(1)+'() 等\n}';
+    }
+  }else if(/for\s*\(|while\s*\(/.test(code)&&/for\s*\(|while\s*\(/.test(code.replace(/for\s*\([^)]*\)\s*\{[^}]*\}/,''))){
+    opt.suggestion='存在嵌套循环，考虑使用哈希表或预计算优化时间复杂度';opt.optimizationType='性能优化';
+    if(isPy){
+      opt.improvedCode='# 优化：将内层循环替换为 set 查找，O(n²)→O(n)\nseen = set()\nfor i, val in enumerate(arr):\n    if target - val in seen:\n        return True\n    seen.add(val)';
+    }else{
+      opt.improvedCode='// 优化：将内层循环替换为 HashMap 查找，O(n²)→O(n)\nMap<Integer, Integer> cache = new HashMap<>();\nfor (int i = 0; i < n; i++) {\n    if (cache.containsKey(target - arr[i])) return true;\n    cache.put(arr[i], i);\n}';
+    }
+  }else if(isSimple){
+    // 代码已足够简洁，无需修改
+    opt.suggestion='';
+    opt.optimizationType='无需优化';
+    opt.improvedCode='';
+  }else if(!parsed.hasTryCatch){
+    opt.suggestion='缺少异常处理，建议在函数体内添加异常保护';
+    opt.optimizationType='健壮性增强';
+    if(isPy){
+      var bodyLines=code.split('\n');
+      // 找到 def 行之后的内容
+      var bi=0;for(;bi<bodyLines.length;bi++){var tl=bodyLines[bi].trim();if(tl&&/^def\s+/.test(tl))break;}
+      var after=bodyLines.slice(bi+1).filter(function(l){return l.trim();});
+      var bIndent=(after[0]||'    ').match(/^(\s*)/)[1]||'    ';
+      opt.improvedCode=bodyLines[bi]+'\n'+bIndent+'try:\n'+after.map(function(l){return bIndent+'    '+l.trim();}).join('\n')+'\n'+bIndent+'except (TypeError, ValueError) as e:\n'+bIndent+'    print(f"错误: {e}")\n'+bIndent+'    raise';
+    }else{
+      // Java: put try-catch inside method body
+      var jLines=code.split('\n');var bracesOpen=0,biJ=0;
+      for(var iB=0;iB<jLines.length;iB++){var tlB=jLines[iB].trim();if(tlB.indexOf('{')!==-1){biJ=iB;break;}}
+      if(biJ>0){
+        var before=jLines.slice(0,biJ+1);var jRest=jLines.slice(biJ+1).filter(function(l){return l.trim()!=='}'});
+        var jIndent='    ';
+        opt.improvedCode=before.join('\n')+'\n'+jIndent+'try {\n'+jRest.map(function(l){return jIndent+'    '+l.trim();}).join('\n')+'\n'+jIndent+'} catch (Exception e) {\n'+jIndent+'    System.err.println("错误: " + e.getMessage());\n'+jIndent+'    throw e;\n'+jIndent+'}\n}';
+      }else{opt.improvedCode=code;}
+    }
+  }
+  if(!opt.suggestion){
+    // 没有需要优化的具体问题，保持现状
+    opt.suggestion='';
+    opt.optimizationType='无需优化';
+    opt.improvedCode='';
+  }
+  return {tips:tips,optimization:opt};
 }
+// ==================== 新增：单元测试值生成 ====================
+// 返回 {args: [...], expected: number|null, desc: string}
+// args 和 expected 在同一处决定，确保一致：add(3,7) → 10
+function generateTestArgs(parsed, code, language, scenario){
+  var fn=(parsed.methodName||'func').toLowerCase();
+  var params=parsed.parameters||[];var n=params.length;
+  var isPy=language==='python';
+  function ptype(i){return (params[i]&&params[i].type||'int').toLowerCase();}
+  function isNum(i){return /int|long|short|byte|number|float|double/.test(ptype(i));}
+  function isStr(i){return /str|string|char/.test(ptype(i));}
+  function isList(i){return /list|array|\[\]|<.*>/.test(ptype(i));}
+  function isBool(i){return /bool|boolean/.test(ptype(i));}
+  // 分析函数体关键词
+  var body=(code||'').toLowerCase();
+  var hasReturnExpr=/return\s+(.+)/i.exec(code);
+  var isAddition=/return\s+\w+\s*\+\s*\w+/.test(code)||/add|sum|plus|加法/.test(fn);
+  var isSubtract=/return\s+\w+\s*\-\s*\w+/.test(code)||/sub|minus|subtract|减法/.test(fn);
+  var isMultiply=/return\s+\w+\s*\*\s*\w+/.test(code)||/mul|multiply|product|乘法/.test(fn);
+  var isDivision=/return\s+\w+\s*\/\s*\w+/.test(code)||/div|divide|除法/.test(fn);
+  var isFactorial=/factorial|阶乘/.test(fn);
+  var isFib=/fib|fibonacci/.test(fn);
+  var isGcd=/gcd|最大公约数/.test(fn);
+  var isPower=/power|pow|乘方/.test(fn);
+  var isMax=/max|maximum|largest|最大/.test(fn);
+  var isMin=/min|minimum|smallest|最小/.test(fn);
+  var isIsPrime=/is_prime|isprime|isPrime/.test(fn);
+  var isIsEven=/is_even|iseven|isEven/.test(fn);
+  var isLen=/len|length|size|count/.test(fn);
+  var isReverse=/reverse|revers|反转/.test(fn);
+  var isFilter=/filter|筛选/.test(fn);
+  // 生成参数值和期望结果
+  if(scenario==='normal'){
+    if(n>=2&&isAddition){ var a=3,b=7; return{args:[a,b].map(function(v){return isPy?String(v):String(v);}),expected:a+b,desc:a+'+'+b+'='+(a+b)}; }
+    if(n>=2&&isSubtract){ var a=10,b=4; return{args:[a,b].map(function(v){return isPy?String(v):String(v);}),expected:a-b,desc:a+'-'+b+'='+(a-b)}; }
+    if(n>=2&&isMultiply){ var a=3,b=4; return{args:[a,b].map(function(v){return isPy?String(v):String(v);}),expected:a*b,desc:a+'×'+b+'='+(a*b)}; }
+    if(n>=2&&isDivision){ var a=10,b=2; return{args:[a,b].map(function(v){return isPy?String(v):String(v);}),expected:a/b,desc:a+'÷'+b+'='+(a/b)}; }
+    if(isFactorial){ var v=5; return{args:[isPy?String(v):String(v)],expected:120,desc:'5! = 120'}; }
+    if(isFib){ var v=6; return{args:[isPy?String(v):String(v)],expected:8,desc:'fib(6) = 8'}; }
+    if(isGcd&&n>=2){ var a=12,b=8; return{args:[a,b].map(function(v){return isPy?String(v):String(v);}),expected:4,desc:'gcd(12,8) = 4'}; }
+    if(isPower&&n>=2){ var a=2,b=3; return{args:[a,b].map(function(v){return isPy?String(v):String(v);}),expected:8,desc:'2^3 = 8'}; }
+    if(isMax&&n>=2){ return{args:['5','3'],expected:5,desc:'max(5,3) = 5'}; }
+    if(isMin&&n>=2){ return{args:['5','3'],expected:3,desc:'min(5,3) = 3'}; }
+    if(isIsPrime){ return{args:[isPy?'11':'11'],expected:true,desc:'11 是素数'}; }
+    if(isIsEven){ return{args:[isPy?'4':'4'],expected:true,desc:'4 是偶数'}; }
+    if(isLen){ return{args:[isPy?'[1,2,3]':'new int[]{1,2,3}'],expected:3,desc:'len([1,2,3]) = 3'}; }
+    if(isReverse){ return{args:[isPy?"'abc'":'"abc"'],expected:null,desc:'依赖函数实现'}; }
+    if(isFilter){ return{args:[isPy?'[1,-2,3,-4]':'new int[]{1,-2,3,-4}'],expected:null,desc:'依赖过滤条件'}; }
+    // 通用：根据参数类型生成值
+    var args=[];for(var i=0;i<n;i++){if(isNum(i))args.push(isPy?String(3+i*4):String(3+i*4));else if(isStr(i))args.push(isPy?"'hello'":'"hello"');else if(isBool(i))args.push(isPy?'True':'true');else if(isList(i))args.push(isPy?'[1,2,3]':'new int[]{1,2,3}');else args.push(isPy?'42':'42');}
+    return{args:args,expected:null,desc:'正常输入'};
+  }
+  if(scenario==='edge'){
+    if(n>=2&&isAddition){ return{args:['0','0'],expected:0,desc:'0+0 = 0'}; }
+    if(n>=2&&isSubtract){ return{args:['0','0'],expected:0,desc:'0-0 = 0'}; }
+    if(n>=2&&isMultiply){ return{args:['0','5'],expected:0,desc:'0×5 = 0'}; }
+    if(n>=2&&isDivision){ return{args:['0','1'],expected:0,desc:'0÷1 = 0 (避除零)'}; }
+    if(isFactorial){ return{args:[isPy?'0':'0'],expected:1,desc:'0! = 1'}; }
+    if(isFib){ return{args:[isPy?'1':'1'],expected:1,desc:'fib(1) = 1'}; }
+    if(isGcd&&n>=2){ return{args:['0','5'],expected:5,desc:'gcd(0,5) = 5'}; }
+    if(isPower&&n>=2){ return{args:['5','0'],expected:1,desc:'5^0 = 1'}; }
+    // 通用零值/空值
+    var args=[];for(var i=0;i<n;i++){if(isNum(i))args.push('0');else if(isStr(i))args.push(isPy?"''":'""');else if(isList(i))args.push(isPy?'[]':'new int[]{}');else if(isBool(i))args.push(isPy?'False':'false');else args.push('0');}
+    return{args:args,expected:null,desc:'边界零值'};
+  }
+  // exception: 类型错误的参数
+  var args=[];for(var i=0;i<n;i++){if(isNum(i))args.push(isPy?'"not_a_number"':'"not_a_number"');else if(isStr(i))args.push(isPy?'42':'42');else if(isBool(i))args.push(isPy?'"not_bool"':'"not_bool"');else args.push(isPy?'None':'null');}
+  return{args:args,expected:null,desc:'类型错误应抛异常'};
+}
+
+function formatPyLiteral(v){if(v===null||v===undefined)return'None';if(typeof v==='boolean')return v?'True':'False';if(typeof v==='string')return"'"+v.replace(/'/g,"\\'")+"'";if(typeof v==='number')return Number.isInteger(v)?String(v):String(Math.round(v*100)/100);return String(v);}
+function formatJavaLiteral(v){if(v===null||v===undefined)return'null';if(typeof v==='boolean')return String(v);if(typeof v==='string')return'"'+v.replace(/"/g,'\\"')+'"';if(typeof v==='number')return Number.isInteger(v)?String(v):String(v)+'d';return String(v);}
+
+// ==================== 新增：单元测试生成 ====================
+function generateUnitTests(parsed, code, language){
+  var fn=parsed.methodName||'myFunction';
+  var params=parsed.parameters||[];
+  var hasReturn=parsed.returnType&&parsed.returnType!=='void';
+  var retType=parsed.returnType||'void';
+  var lang=language||'python';var isPy=lang==='python';
+  var tc=[];
+  // 为三种场景生成一致的 args+expected
+  var normal=generateTestArgs(parsed,code,lang,'normal');
+  var edge=generateTestArgs(parsed,code,lang,'edge');
+  var exc=generateTestArgs(parsed,code,lang,'exception');
+  var nA=normal.args.join(', '),eA=edge.args.join(', '),xA=exc.args.join(', ');
+  var callN=params.length>0?fn+'('+nA+')':fn+'()';
+  var callE=params.length>0?fn+'('+eA+')':fn+'()';
+  var callX=params.length>0?fn+'('+xA+')':fn+'()';
+  var isRecursive=(function(){try{var rfn=fn.replace(/[.*+?^${}()|[\]\\]/g,'\\$&');var bp=code.replace(/^[^{]*\{|^def\s+\w+[^:]*:\s*\n?/,'');return new RegExp('\\b'+rfn+'\\s*\\(','i').test(bp);}catch(e){return false;}})();
+  // 是否简单无副作用（如 add(a,b) 无 try-except 无类型检查）
+  var hasTypeCheck=/isinstance|typecheck|typeof/.test(code.toLowerCase());
+  var shouldGenException=parsed.hasTryCatch||hasTypeCheck;
+  if(isPy){
+    tc.push('# 单元测试: '+fn+'\n# 运行: pytest test_'+fn+'.py -v\n# 将包含 '+fn+' 函数的模块与本测试文件放在同一目录\n# 然后取消下一行的注释：\n# from '+fn+'_module import '+fn+'\nimport pytest\n\n');
+    // 正常输入
+    tc.push('def test_'+fn+'_normal():\n    """正常输入：'+normal.desc+'"""');
+    tc.push('\n    result = '+callN);
+    if(hasReturn&&normal.expected!==null)tc.push('\n    assert result == '+formatPyLiteral(normal.expected)+', f"期望 '+formatPyLiteral(normal.expected)+'，实际 {result}"');
+    else if(hasReturn&&isRecursive)tc.push('\n    assert result > 0, "递归结果应 > 0"');
+    else if(hasReturn)tc.push('\n    assert isinstance(result, (int, float, str, list, bool)), "返回值类型异常"');
+    else tc.push('\n    # 无返回值，验证无异常即通过');
+    tc.push('\n\n');
+    // 边界值
+    tc.push('def test_'+fn+'_boundary():\n    """边界值：'+edge.desc+'"""');
+    tc.push('\n    result = '+callE);
+    if(hasReturn&&edge.expected!==null)tc.push('\n    assert result == '+formatPyLiteral(edge.expected)+', f"期望 '+formatPyLiteral(edge.expected)+'，实际 {result}"');
+    else if(hasReturn)tc.push('\n    assert result is not None, "边界值应返回有效结果"');
+    else tc.push('\n    # 验证边界值不抛异常');
+    tc.push('\n\n');
+    // 异常输入
+    if(shouldGenException){
+      tc.push('def test_'+fn+'_exception():\n    """异常输入：错误参数应触发异常"""');
+      tc.push('\n    with pytest.raises(Exception):\n        '+callX);
+    }else{
+      tc.push('def test_'+fn+'_type_error():\n    """类型检查：传入错误类型参数"""');
+      tc.push('\n    # 该函数未显式做类型检查，Python 运行时可能自然抛出 TypeError');
+      tc.push('\n    # 具体行为依赖于 Python 运算符对类型的处理');
+      tc.push('\n    import pytest\n    with pytest.raises((TypeError, ValueError, ZeroDivisionError)):\n        '+callX);
+    }
+  }else{
+    var cn=fn.charAt(0).toUpperCase()+fn.slice(1);
+    tc.push('import org.junit.Test;\nimport static org.junit.Assert.*;\n\npublic class '+cn+'Test {\n');
+    // 正常输入
+    tc.push('    @Test\n    public void testNormalInput() {\n        // 正常输入：'+normal.desc);
+    if(hasReturn){
+      tc.push('\n        '+retType+' result = '+callN+';');
+      if(normal.expected!==null)tc.push('\n        assertEquals("应返回正确值", '+formatJavaLiteral(normal.expected)+', result);');
+      else if(isRecursive)tc.push('\n        assertTrue("递归结果应 > 0", result > 0);');
+      else tc.push('\n        assertNotNull("结果不应为 null", result);');
+    }else{tc.push('\n        '+callN+'; // 验证无异常抛出');}
+    tc.push('\n    }\n\n');
+    // 边界值
+    tc.push('    @Test\n    public void testBoundaryInput() {\n        // 边界值：'+edge.desc);
+    if(params.length>0){
+      if(hasReturn){
+        tc.push('\n        '+retType+' result = '+callE+';');
+        if(edge.expected!==null)tc.push('\n        assertEquals("边界值验证", '+formatJavaLiteral(edge.expected)+', result);');
+        else tc.push('\n        assertNotNull("边界值结果不应为 null", result);');
+      }else{tc.push('\n        '+callE+'; // 验证边界值不崩溃');}
+    }else{tc.push('\n        '+callE+'; // 无参边界测试');}
+    tc.push('\n    }\n\n');
+    // 异常输入
+    if(shouldGenException){
+      tc.push('    @Test(expected = Exception.class)\n    public void testExceptionInput() {\n        // 异常输入：'+exc.desc+'\n        '+callX+';\n    }\n');
+    }else{
+      tc.push('    @Test\n    public void testEdgeCase() {\n        // 额外场景：该函数无显式异常处理，验证常规逻辑\n        '+callN+';\n    }\n');
+    }
+    tc.push('}');
+  }
+  return tc.join('');
+}
+
+// ==================== 新增：雷达图绘制（纯 Canvas） ====================
+function generateRadarScores(parsed,code){
+  var lines=code.split('\n');var bodyOnly=lines.slice(1).join('\n');
+  // 简洁性：参数≤3 且行数≤20 → 高分
+  var conciseness=Math.min(100,Math.max(20,100-(parsed.parameters.length>3?(parsed.parameters.length-3)*15:0)-(lines.length>20?(lines.length-20)*3:0)+(parsed.parameters.length<=2&&lines.length<=10?10:0)));
+  // 可读性：有注释+命名规范
+  var hasComment=/\/\/|\/\*|#|"""|'''/.test(code)||(parsed.methodName&&parsed.methodName!=='未命名方法'&&parsed.methodName!=='未命名函数');
+  var goodNaming=parsed.methodName&&!/^[a-z]$|^temp|^tmp|^foo|^bar|^test$/i.test(parsed.methodName);
+  var readability=Math.min(100,(hasComment?50:10)+(goodNaming?50:15)+(lines.length<=15?0:0));
+  // 健壮性：有异常处理+边界检查
+  var hasBoundsCheck=/if\s*\(.*[<>=!]=.*\)|if\s+.*[<>=!]=.*:|assert|requireNonNull|Objects\.requireNonNull/.test(code);
+  var robustness=Math.min(100,(parsed.hasTryCatch?55:10)+(hasBoundsCheck?45:15));
+  // 性能：无深层循环/递归
+  var cMatches=(code.match(/for|while/g)||[]).length;
+  var hasRecursion=/recursion|recursive|factorial|fib\s*\(|fibonacci/i.test(code.toLowerCase())||(function(){try{var fn=parsed.methodName.replace(/[.*+?^${}()|[\]\\]/g,'\\$&');return new RegExp('\\b'+fn+'\\s*\\(','i').test(code.replace(/^[^{]*\{/,''));}catch(e){return false;}})();
+  var performance=Math.min(100,Math.max(20,100-(cMatches>2?(cMatches-2)*15:0)-(hasRecursion?30:0)+(cMatches<=1&&!hasRecursion?15:0)));
+  // 注释：函数头注释
+  var hasDocComment=/\/\*\*|\"\"\"|'''|@param|@return|@throws/.test(code);
+  var comments=hasDocComment?90:(hasComment?50:20);
+  return [
+    {axis:'简洁性',value:Math.round(conciseness),color:'#3B82F6'},
+    {axis:'可读性',value:Math.round(readability),color:'#10B981'},
+    {axis:'健壮性',value:Math.round(robustness),color:'#8B5CF6'},
+    {axis:'性能',value:Math.round(performance),color:'#F59E0B'},
+    {axis:'注释',value:Math.round(comments),color:'#EF4444'}
+  ];
+}
+
+function drawRadarChart(scores){
+  var size=480,center=size/2,radius=180,levels=5;
+  var canvas=document.createElement('canvas');canvas.width=size;canvas.height=size;
+  var ctx=canvas.getContext('2d');
+  ctx.clearRect(0,0,size,size);
+  var angles=scores.map(function(_,i){return -Math.PI/2+(2*Math.PI*i)/scores.length;});
+  // 绘制背景网格
+  for(var l=1;l<=levels;l++){
+    var r=(radius/levels)*l;ctx.beginPath();
+    for(var i=0;i<=scores.length;i++){var idx=i%scores.length;var ax=center+r*Math.cos(angles[idx]),ay=center+r*Math.sin(angles[idx]);if(i===0)ctx.moveTo(ax,ay);else ctx.lineTo(ax,ay);}
+    ctx.closePath();ctx.strokeStyle='#E2EDF8';ctx.lineWidth=1;ctx.stroke();
+    if(l===levels){ctx.fillStyle='rgba(59,130,246,0.04)';ctx.fill();}
+  }
+  // 绘制轴线
+  for(var i=0;i<scores.length;i++){ctx.beginPath();ctx.moveTo(center,center);ctx.lineTo(center+radius*Math.cos(angles[i]),center+radius*Math.sin(angles[i]));ctx.strokeStyle='#E2EDF8';ctx.lineWidth=1;ctx.stroke();}
+  // 绘制标签
+  ctx.font='bold 13px "PingFang SC","Microsoft YaHei",sans-serif';ctx.textAlign='center';ctx.textBaseline='middle';ctx.fillStyle='#64748B';
+  for(var i=0;i<scores.length;i++){var lx=center+(radius+36)*Math.cos(angles[i]),ly=center+(radius+36)*Math.sin(angles[i]);ctx.fillText(scores[i].axis,lx,ly);}
+  // 绘制数据区
+  ctx.beginPath();
+  for(var i=0;i<scores.length;i++){var dr=(scores[i].value/100)*radius;var dx=center+dr*Math.cos(angles[i]),dy=center+dr*Math.sin(angles[i]);if(i===0)ctx.moveTo(dx,dy);else ctx.lineTo(dx,dy);}
+  ctx.closePath();ctx.fillStyle='rgba(59,130,246,0.18)';ctx.fill();ctx.strokeStyle='#3B82F6';ctx.lineWidth=2.5;ctx.stroke();
+  // 绘制数据点
+  for(var i=0;i<scores.length;i++){var dr2=(scores[i].value/100)*radius;var dx2=center+dr2*Math.cos(angles[i]),dy2=center+dr2*Math.sin(angles[i]);ctx.beginPath();ctx.arc(dx2,dy2,5,0,2*Math.PI);ctx.fillStyle=scores[i].color;ctx.fill();ctx.strokeStyle='#FFF';ctx.lineWidth=2;ctx.stroke();
+    // 分数标签
+    var slx=center+(dr2+16)*Math.cos(angles[i]),sly=center+(dr2+16)*Math.sin(angles[i]);ctx.font='bold 11px "PingFang SC","Microsoft YaHei",sans-serif';ctx.fillStyle=scores[i].color;ctx.fillText(String(scores[i].value),slx,sly);
+  }
+  return canvas.toDataURL('image/png');
+}
+
+// ==================== 新增：优化建议对比 ====================
+function generateOptimizationComparison(parsed,code,opt,language){
+  if(!opt||!opt.suggestion)opt=(generateBestPractices(parsed,code,language)||{}).optimization||{};
+  var isPy=language==='python';
+  var hasImprovement=!!(opt.improvedCode&&opt.improvedCode!==''&&opt.improvedCode!==code);
+  if(!hasImprovement){
+    // 无优化时，优化后代码与优化前一致，说明保持现状
+    return {
+      title:'无需优化',
+      suggestion:'代码已十分简洁，无需额外优化',
+      originalLabel:'当前代码',
+      improvedLabel:'保持现状',
+      originalCode:opt.originalCode||code,
+      improvedCode:opt.originalCode||code,
+      hasImprovement:false,
+      noChangeMessage:'✅ 该函数已足够简洁，无需额外优化'
+    };
+  }
+  return {
+    title:opt.optimizationType||'代码优化建议',
+    suggestion:opt.suggestion||'',
+    originalLabel:'优化前',
+    improvedLabel:'优化后',
+    originalCode:opt.originalCode||code,
+    improvedCode:opt.improvedCode||code,
+    hasImprovement:true,
+    noChangeMessage:''
+  };
+}
+
+// ==================== 新增：学习路径推荐 ====================
+var LEARNING_PATHS={
+  '递归':{title:'动态规划入门',desc:'递归是自上而下分解，动态规划则是自下而上填表。推荐学习记忆化搜索和 DP 转移方程。',resources:['LeetCode 70: 爬楼梯（经典 DP）','LeetCode 509: 斐波那契数（多解法对比）','《算法导论》第15章：动态规划'],nextStep:'从斐波那契数列的递归版本开始，逐步引入记忆化缓存，再改写为迭代 DP，体会三种解法的性能差异。'},
+  '排序':{title:'排序算法全景',desc:'你已经接触了排序，深入了解各种排序算法的适用场景和时间复杂度对比是下一步关键。',resources:['LeetCode 912: 排序数组（实现多种排序）','LeetCode 215: 数组中的第K个最大元素（快排分区）','可视化：sorting-algorithms.com'],nextStep:'手动实现快速排序和归并排序，对比它们在随机数据和近乎有序数据上的性能表现。'},
+  '循环':{title:'算法复杂度分析',desc:'循环是算法的基础构建块，学会分析嵌套循环的时间复杂度是进阶关键。',resources:['LeetCode 1: 两数之和（O(n²)→O(n)优化）','LeetCode 167: 两数之和II（双指针技巧）','《算法图解》第1-3章：大O表示法'],nextStep:'选择一个包含嵌套循环的题目，尝试使用哈希表将 O(n²) 优化到 O(n)。'},
+  '缓存':{title:'缓存与记忆化',desc:'你已经理解了空间换时间的核心思想，深入学习 LRU、LFU 等缓存淘汰策略。',resources:['LeetCode 146: LRU 缓存（经典面试题）','LeetCode 460: LFU 缓存（进阶）','设计模式：代理模式和装饰器模式中的缓存应用'],nextStep:'实现一个带过期时间的简单缓存类，理解缓存命中率和淘汰策略的关系。'},
+  '文件IO':{title:'数据持久化与流处理',desc:'文件 IO 是企业级应用的基石，掌握流式处理和序列化技术。',resources:['Java NIO vs IO 性能对比','Python 上下文管理器与 with 语句深入','序列化：JSON/Protobuf/MessagePack 选型指南'],nextStep:'编写一个日志解析器，从文件中逐行读取数据并统计关键词出现频率。'},
+  '校验':{title:'输入验证与防御性编程',desc:'校验是系统安全的第一道防线，学习常见的安全漏洞和防御策略。',resources:['OWASP Top 10: 常见 Web 安全漏洞','Java Bean Validation (JSR 380)','Python Pydantic 数据验证库'],nextStep:'为你的函数添加完整的输入验证，包括类型检查、范围检查和格式校验。'},
+  'API调用':{title:'网络编程与API设计',desc:'理解HTTP协议和RESTful设计原则，是成为全栈开发者的必经之路。',resources:['MDN: HTTP 请求方法详解','RESTful API 设计最佳实践','Postman 工具使用教程'],nextStep:'使用公共 API（如 GitHub API）编写一个小工具，获取数据并解析展示。'},
+  '类':{title:'面向对象设计原则',desc:'你已经理解了类和对象的基本概念，学习 SOLID 原则可以让设计更优雅。',resources:['《设计模式：可复用面向对象软件的基础》','SOLID 原则详解（图文版）','重构：改善既有代码的设计'],nextStep:'选择一个已有的面向过程代码，尝试用面向对象的方式重写，体会封装和多态的好处。'},
+  'default':{title:'代码质量提升之路',desc:'持续学习和实践是提升编程能力的最好方式。建议从代码审查和重构练习开始。',resources:['LeetCode 热门 100 题','《代码整洁之道》','GitHub 开源项目贡献指南'],nextStep:'选择一个感兴趣的开源项目，阅读其源码并尝试提交一个 PR。'}
+};
+
+function generateLearningPath(patterns,language,code){
+  if(!patterns||patterns.length===0)patterns=[{value:'default',isInferred:true}];
+  var vals=patternValues(patterns);
+  var primary=vals[0]||'default';
+  var path=LEARNING_PATHS[primary]||LEARNING_PATHS['default'];
+  var langLabel=language==='java'?'Java':'Python';
+  return {
+    title:path.title,
+    description:path.description,
+    primaryPattern:primary,
+    resources:path.resources,
+    nextStep:path.nextStep,
+    langLabel:langLabel,
+    challenge:path.resources[0]||'LeetCode 入门题'
+  };
+}
+
+// ==================== 新增：趋势折线图（Canvas，用于 Word） ====================
+function drawTrendChartCanvas(dataPoints){
+  var w=640,h=300,pad=50;
+  var canvas=document.createElement('canvas');canvas.width=w;canvas.height=h;
+  var ctx=canvas.getContext('2d');
+  ctx.clearRect(0,0,w,h);
+  // 背景
+  ctx.fillStyle='#F8FAFC';ctx.fillRect(0,0,w,h);
+  if(!dataPoints||dataPoints.length<2){
+    ctx.font='16px "PingFang SC","Microsoft YaHei",sans-serif';ctx.textAlign='center';ctx.fillStyle='#64748B';ctx.fillText('数据不足，无法绘制趋势图',w/2,h/2);
+    return canvas.toDataURL('image/png');
+  }
+  var plotW=w-pad*2,plotH=h-pad*2;
+  var values=dataPoints.map(function(d){return d.score;});
+  var minV=Math.max(0,Math.min.apply(null,values)-10),maxV=Math.min(100,Math.max.apply(null,values)+10);
+  if(maxV-minV<20){maxV=Math.min(100,maxV+10);minV=Math.max(0,minV-10);}
+  var range=maxV-minV||1;
+  // 网格线
+  ctx.strokeStyle='#E2EDF8';ctx.lineWidth=.5;
+  for(var i=0;i<=4;i++){var gy=pad+(plotH/4)*i;ctx.beginPath();ctx.moveTo(pad,gy);ctx.lineTo(pad+plotW,gy);ctx.stroke();
+    ctx.font='10px "PingFang SC","Microsoft YaHei",sans-serif';ctx.textAlign='right';ctx.fillStyle='#94A3B8';ctx.fillText(String(Math.round(maxV-(range/4)*i)),pad-6,gy+3);
+  }
+  // X轴标签
+  ctx.textAlign='center';ctx.fillStyle='#94A3B8';ctx.font='10px "PingFang SC","Microsoft YaHei",sans-serif';
+  var xStep=plotW/Math.max(1,dataPoints.length-1);
+  for(var i=0;i<dataPoints.length;i++){ctx.fillText(dataPoints[i].label||('#'+(i+1)),pad+i*xStep,h-pad+18);}
+  // 数据线
+  var points=[];
+  for(var i=0;i<dataPoints.length;i++){var px=pad+i*xStep;var py=pad+plotH-((dataPoints[i].score-minV)/range)*plotH;points.push({x:px,y:py});}
+  // 渐变填充
+  var grad=ctx.createLinearGradient(0,pad,0,pad+plotH);
+  grad.addColorStop(0,'rgba(59,130,246,0.25)');grad.addColorStop(1,'rgba(59,130,246,0.02)');
+  ctx.beginPath();ctx.moveTo(points[0].x,points[0].y);
+  for(var i=1;i<points.length;i++)ctx.lineTo(points[i].x,points[i].y);
+  ctx.lineTo(points[points.length-1].x,pad+plotH);ctx.lineTo(points[0].x,pad+plotH);ctx.closePath();
+  ctx.fillStyle=grad;ctx.fill();
+  // 线
+  ctx.beginPath();ctx.moveTo(points[0].x,points[0].y);
+  for(var i=1;i<points.length;i++)ctx.lineTo(points[i].x,points[i].y);
+  ctx.strokeStyle='#3B82F6';ctx.lineWidth=2.5;ctx.lineJoin='round';ctx.stroke();
+  // 数据点
+  for(var i=0;i<points.length;i++){
+    ctx.beginPath();ctx.arc(points[i].x,points[i].y,5,0,Math.PI*2);ctx.fillStyle='#3B82F6';ctx.fill();
+    ctx.beginPath();ctx.arc(points[i].x,points[i].y,2.5,0,Math.PI*2);ctx.fillStyle='#FFF';ctx.fill();
+    ctx.font='bold 11px "PingFang SC","Microsoft YaHei",sans-serif';ctx.textAlign='center';ctx.fillStyle='#1E293B';ctx.fillText(String(dataPoints[i].score),points[i].x,points[i].y-12);
+  }
+  return canvas.toDataURL('image/png');
+}
+
 // 核心：生成单个 PPT（供单独和批量复用）
 function generatePPTForCode(code,language,parsed){
   var ppt=new PptxGenJS();ppt.defineLayout({name:'WIDE',width:13.33,height:7.5});ppt.layout='WIDE';
   var p=parsed||(language==='java'?parseJava(code):parsePython(code));
   var l=language||'java',c=code||p.rawCode||'';
   var accent='3B82F6',accent2='10B981',grey='64748B',dark='1E293B',muted='94A3B8',bg='F1F5F9',codeBg='1E293B',codeFg='E2E8F0',white='FFFFFF';
-  var pageN=0;function addFooter(s){pageN++;s.addText(String(pageN)+' / 7',{x:12.3,y:7.1,w:1,h:0.3,fontSize:9,color:muted,align:'right'});}
+  var pageN=0;function addFooter(s){pageN++;s.addText(String(pageN)+' / 11',{x:12.3,y:7.1,w:1,h:0.3,fontSize:9,color:muted,align:'right'});}
   var pts=detectPatterns(p,c),vals=patternValues(pts);var match=matchMetaphorEntry(c,p,pts);var sem=generateSemanticExplanation(p,c,l);
   var health=calculateHealthScore(c,p.parameters);var hc=health.score>=80?accent2:health.score>=50?'F59E0B':'EF4444';
   var fnDisplay=p.customName||p.methodName||'未命名';
@@ -1115,8 +1499,8 @@ function generatePPTForCode(code,language,parsed){
   s2.addText(c,{x:0.7,y:1.5,w:6.8,h:1.6,fontSize:9,fontFace:'Consolas',color:codeFg,valign:'top'});
   // 解析签名
   s2.addText('解析签名',{x:8.2,y:1.05,w:5,h:0.3,fontSize:10,bold:true,color:grey});
-  var paramsDisplay=p.parameters.map(function(pp){return pp.type?pp.type+' '+pp.name:pp.name}).join(', ');
-  var sig=(l==='java'?p.returnType+' '+p.methodName+'('+paramsDisplay+')':'def '+p.methodName+'('+paramsDisplay+')'+(p.returnType&&p.returnType!=='void'?' -> '+p.returnType:''));
+  var paramsDisplay=l==='java'?p.parameters.map(function(pp){return pp.type?pp.type+' '+pp.name:pp.name}).join(', '):p.parameters.map(function(pp){return pp.type?pp.name+': '+pp.type:pp.name}).join(', ');
+  var sig=l==='java'?p.returnType+' '+p.methodName+'('+paramsDisplay+')':'def '+p.methodName+'('+paramsDisplay+')'+(p.returnType&&p.returnType!=='void'?' -> '+p.returnType:'');
   s2.addShape('rect',{x:8.2,y:1.4,w:4.8,h:0.55,fill:{color:codeBg},rectRadius:.06});
   s2.addText(sig,{x:8.4,y:1.45,w:4.4,h:0.45,fontSize:11,fontFace:'Consolas',color:codeFg});
   // 快速统计卡
@@ -1201,7 +1585,7 @@ function generatePPTForCode(code,language,parsed){
   var s5=ppt.addSlide();s5.background={fill:white};
   s5.addShape('rect',{x:0,y:0,w:13.33,h:0.06,fill:{color:accent}});
   s5.addText('示例调用与测试场景',{x:0.5,y:0.25,w:12,h:0.5,fontSize:22,bold:true,color:dark});
-  var ex=generateExampleCall(p);var exCode=(l==='java'?p.returnType+' result = ':'result = ')+ex+';';
+  var ex=generateExampleCall(p);var exCode=(l==='java'?p.returnType+' result = '+ex+';':'result = '+ex);
   // 主调用
   s5.addText('基础调用示例',{x:0.5,y:0.9,w:5,h:0.3,fontSize:10,bold:true,color:grey});
   s5.addShape('rect',{x:0.5,y:1.15,w:7.5,h:0.65,fill:{color:codeBg},rectRadius:.06});
@@ -1219,7 +1603,7 @@ function generatePPTForCode(code,language,parsed){
     s5.addText(tcs[ti][2],{x:8.1,y:tcY,w:4.5,h:0.38,fontSize:9,color:grey});
   }
   // 实践提示
-  var tips=generateBestPractices(p,c).slice(0,3);
+  var bpResult=generateBestPractices(p,c,l);var tips=bpResult.tips.slice(0,3);
   if(tips.length>0){s5.addText('💡 实践提示',{x:0.5,y:4.4,w:8,h:0.3,fontSize:10,bold:true,color:grey});for(var ti=0;ti<tips.length;ti++)s5.addText((ti+1)+'. '+tips[ti],{x:0.5,y:4.75+ti*0.35,w:12,h:0.3,fontSize:10,color:dark});}
   addFooter(s5);
 
@@ -1250,7 +1634,7 @@ function generatePPTForCode(code,language,parsed){
   s7.addShape('rect',{x:0,y:0,w:13.33,h:0.06,fill:{color:accent}});
   s7.addText('最佳实践与仪表盘统计',{x:0.5,y:0.25,w:12,h:0.5,fontSize:22,bold:true,color:dark});
   // 三列卡片
-  var allTips=generateBestPractices(p,c).slice(0,3);
+  var bpResult2=generateBestPractices(p,c,l);var allTips=bpResult2.tips.slice(0,3);
   var cW=3.8,ch=1.3,cG=0.35;
   for(var ti=0;ti<Math.min(3,allTips.length);ti++){
     var cx=0.5+ti*(cW+cG),cy=0.95;
@@ -1282,6 +1666,121 @@ function generatePPTForCode(code,language,parsed){
   s7.addText('庞凯匀 · 230152061 · 代码解释器 v4.5 · 期末考核项目',{x:0.5,y:6.4,w:8,h:0.3,fontSize:9,color:muted});
   s7.addText('本报告由代码智能说明书系统自动生成 · 纯前端 · 零后端',{x:0.5,y:6.7,w:8,h:0.3,fontSize:8,color:muted});
   addFooter(s7);
+
+  // ===== 第8页：代码质量雷达图 =====
+  var s8=ppt.addSlide();s8.background={fill:white};
+  s8.addShape('rect',{x:0,y:0,w:13.33,h:0.06,fill:{color:accent}});
+  s8.addText('📊 代码质量雷达图',{x:0.5,y:0.25,w:12,h:0.5,fontSize:22,bold:true,color:dark});
+  s8.addText('五维度评分 · 基于代码结构与内容',{x:0.5,y:0.7,w:12,h:0.35,fontSize:11,color:muted});
+  var radarScores=generateRadarScores(p,c);
+  // 左侧：雷达图
+  try{
+    var radarImg=drawRadarChart(radarScores);
+    s8.addImage({data:radarImg,x:0.3,y:1.2,w:5.8,h:5.8});
+  }catch(e){s8.addText('雷达图生成中…',{x:2,y:3,w:3,h:0.5,fontSize:12,color:grey});}
+  // 右侧：评分详情表
+  s8.addShape('rect',{x:6.5,y:1.2,w:6.3,h:5.8,fill:{color:bg},rectRadius:.08});
+  s8.addText('维度详情',{x:6.8,y:1.35,w:5.5,h:0.3,fontSize:11,bold:true,color:grey});
+  // 各维度进度条
+  for(var ri=0;ri<radarScores.length;ri++){
+    var rs=radarScores[ri],rY=1.8+ri*1.0;
+    s8.addText(rs.axis,{x:6.8,y:rY,w:1.8,h:0.3,fontSize:11,bold:true,color:dark});
+    s8.addText(String(rs.value)+' 分',{x:8.6,y:rY,w:1.2,h:0.3,fontSize:11,bold:true,color:rs.color});
+    s8.addShape('rect',{x:6.8,y:rY+0.35,w:5.6,h:0.28,fill:{color:'E2EDF8'},rectRadius:.04});
+    s8.addShape('rect',{x:6.8,y:rY+0.35,w:5.6*rs.value/100,h:0.28,fill:{color:rs.color},rectRadius:.04});
+    var rReason='';
+    if(rs.axis==='简洁性')rReason=rs.value>=80?'参数少、行数适中':rs.value>=50?'参数或行数略多':'参数过多或代码过长';
+    else if(rs.axis==='可读性')rReason=rs.value>=80?'命名清晰且有注释':rs.value>=50?'部分满足可读性要求':'缺少注释或命名不规范';
+    else if(rs.axis==='健壮性')rReason=rs.value>=80?'有异常处理和边界检查':rs.value>=50?'部分具备防护措施':'缺少异常处理保护';
+    else if(rs.axis==='性能')rReason=rs.value>=80?'无深层循环/递归':rs.value>=50?'存在少量性能瓶颈':'深层循环或递归影响性能';
+    else rReason=rs.value>=80?'有函数头注释':rs.value>=50?'有部分注释':'缺少注释';
+    s8.addText(rReason,{x:6.8,y:rY+0.66,w:5.6,h:0.25,fontSize:8,color:muted});
+  }
+  addFooter(s8);
+
+  // ===== 第9页：优化建议对比 =====
+  var optResult=generateBestPractices(p,c,l);
+  var optComp=generateOptimizationComparison(p,c,optResult.optimization,l);
+  var s9=ppt.addSlide();s9.background={fill:white};
+  s9.addShape('rect',{x:0,y:0,w:13.33,h:0.06,fill:{color:accent}});
+  if(!optComp.hasImprovement){
+    // 无需优化：单面板展示
+    s9.addText('🔧 优化建议',{x:0.5,y:0.25,w:12,h:0.5,fontSize:22,bold:true,color:dark});
+    s9.addText(optComp.noChangeMessage,{x:0.5,y:0.85,w:12,h:0.5,fontSize:16,color:accent2});
+    s9.addShape('rect',{x:0.5,y:1.5,w:12.3,h:1.8,fill:{color:bg},rectRadius:.08});
+    s9.addText('💡 当前代码已经具备以下优点：',{x:0.8,y:1.65,w:11.5,h:0.35,fontSize:12,bold:true,color:dark});
+    var whyGood=[];
+    if(p.methodName&&p.methodName!=='未命名方法'&&p.methodName!=='未命名函数')whyGood.push('函数名 "'+p.methodName+'" 清晰表达意图');
+    if(p.parameters.length<=3)whyGood.push('参数数量合理（'+p.parameters.length+'个），接口简洁');
+    if(p.returnType&&p.returnType!=='void')whyGood.push('有明确的返回值类型 '+p.returnType);
+    if(health.score>=80)whyGood.push('健康度 '+health.score+' 分，结构优秀');
+    if(!whyGood.length)whyGood.push('代码简洁清晰，风格良好');
+    for(var wgi=0;wgi<Math.min(whyGood.length,3);wgi++)s9.addText('· '+whyGood[wgi],{x:0.8,y:2.05+wgi*0.4,w:11.5,h:0.35,fontSize:11,color:dark});
+    s9.addText('继续保持当前代码风格，无需修改。',{x:0.8,y:2.05+Math.min(whyGood.length,3)*0.4,w:11.5,h:0.35,fontSize:12,color:accent});
+  }else{
+    s9.addText('🔧 优化建议对比',{x:0.5,y:0.25,w:12,h:0.5,fontSize:22,bold:true,color:dark});
+    s9.addText(optComp.title+'：'+optComp.suggestion,{x:0.5,y:0.75,w:12,h:0.4,fontSize:12,color:'F59E0B'});
+    // 左侧：优化前
+    s9.addShape('rect',{x:0.3,y:1.3,w:6.2,h:5.5,fill:{color:bg},rectRadius:.08});
+    s9.addShape('rect',{x:0.3,y:1.3,w:6.2,h:0.4,fill:{color:'EF4444'},rectRadius:.08});
+    s9.addText('❌ 优化前',{x:0.5,y:1.35,w:5,h:0.3,fontSize:11,bold:true,color:'#FFF'});
+    s9.addShape('rect',{x:0.45,y:1.85,w:5.9,h:4.8,fill:{color:codeBg},rectRadius:.06});
+    s9.addText(optComp.originalCode,{x:0.6,y:1.95,w:5.6,h:4.6,fontSize:9,fontFace:'Consolas',color:codeFg,valign:'top'});
+    // 右侧：优化后
+    s9.addShape('rect',{x:6.8,y:1.3,w:6.2,h:5.5,fill:{color:bg},rectRadius:.08});
+    s9.addShape('rect',{x:6.8,y:1.3,w:6.2,h:0.4,fill:{color:accent2},rectRadius:.08});
+    s9.addText('✅ 优化后',{x:7.0,y:1.35,w:5,h:0.3,fontSize:11,bold:true,color:'#FFF'});
+    s9.addShape('rect',{x:6.95,y:1.85,w:5.9,h:4.8,fill:{color:codeBg},rectRadius:.06});
+    s9.addText(optComp.improvedCode,{x:7.1,y:1.95,w:5.6,h:4.6,fontSize:9,fontFace:'Consolas',color:accent2,valign:'top'});
+  }
+  addFooter(s9);
+
+  // ===== 第10页：单元测试代码 =====
+  var unitTestCode=generateUnitTests(p,c,l);
+  var s10=ppt.addSlide();s10.background={fill:white};
+  s10.addShape('rect',{x:0,y:0,w:13.33,h:0.06,fill:{color:accent}});
+  s10.addText('🧪 单元测试代码',{x:0.5,y:0.25,w:12,h:0.5,fontSize:22,bold:true,color:dark});
+  s10.addText('自动生成的测试代码 · '+(l==='java'?'JUnit 4':'pytest')+' · 含 3 个测试用例',{x:0.5,y:0.7,w:12,h:0.35,fontSize:11,color:muted});
+  // 测试用例说明卡片
+  var tcInfo=[['✅ 正常输入','验证基本功能正确性'],['⚠️ 边界值','测试边界条件处理'],['🔍 异常/类型','异常情况安全兜底']];
+  for(var tci=0;tci<3;tci++){
+    s10.addShape('rect',{x:0.5+tci*4.1,y:1.15,w:3.9,h:0.6,fill:{color:bg},rectRadius:.06});
+    s10.addText(tcInfo[tci][0],{x:0.7+tci*4.1,y:1.18,w:3.5,h:0.28,fontSize:10,bold:true,color:tci===0?accent2:tci===1?'F59E0B':'EF4444'});
+    s10.addText(tcInfo[tci][1],{x:0.7+tci*4.1,y:1.46,w:3.5,h:0.22,fontSize:9,color:muted});
+  }
+  // 测试代码块
+  s10.addShape('rect',{x:0.3,y:1.95,w:12.7,h:5.0,fill:{color:codeBg},rectRadius:.08});
+  s10.addText(unitTestCode,{x:0.5,y:2.0,w:12.3,h:4.9,fontSize:9,fontFace:'Consolas',color:codeFg,valign:'top'});
+  addFooter(s10);
+
+  // ===== 第11页：学习路径推荐 =====
+  var learnPath=generateLearningPath(pts,l,c);
+  var s11=ppt.addSlide();s11.background={fill:white};
+  s11.addShape('rect',{x:0,y:0,w:13.33,h:0.06,fill:{color:accent}});
+  s11.addText('🎓 学习路径推荐',{x:0.5,y:0.25,w:12,h:0.5,fontSize:22,bold:true,color:dark});
+  s11.addText('基于检测模式「'+learnPath.primaryPattern+'」推荐 · '+learnPath.langLabel,{x:0.5,y:0.7,w:12,h:0.35,fontSize:11,color:muted});
+  // 推荐课程卡片
+  s11.addShape('rect',{x:0.5,y:1.2,w:7.5,h:2.2,fill:{color:bg},rectRadius:.08});
+  s11.addText('📚 '+learnPath.title,{x:0.8,y:1.35,w:6.8,h:0.4,fontSize:18,bold:true,color:accent});
+  s11.addText(learnPath.description,{x:0.8,y:1.85,w:6.8,h:1.0,fontSize:11,color:dark});
+  s11.addText('下一步：'+learnPath.nextStep,{x:0.8,y:2.7,w:6.8,h:0.5,fontSize:11,color:accent2});
+  // 推荐资源
+  s11.addShape('rect',{x:8.3,y:1.2,w:4.7,h:2.2,fill:{color:bg},rectRadius:.08});
+  s11.addText('🔗 推荐资源',{x:8.6,y:1.35,w:4,h:0.3,fontSize:11,bold:true,color:grey});
+  for(var lr=0;lr<Math.min(learnPath.resources.length,3);lr++){
+    s11.addText((lr+1)+'. '+learnPath.resources[lr],{x:8.6,y:1.7+lr*0.55,w:4.1,h:0.5,fontSize:10,color:dark});
+  }
+  // 挑战题目
+  s11.addShape('rect',{x:0.5,y:3.6,w:12.3,h:1.0,fill:{color:codeBg},rectRadius:.08});
+  s11.addText('🏆 推荐挑战',{x:0.8,y:3.7,w:3,h:0.3,fontSize:10,bold:true,color:muted});
+  s11.addText(learnPath.challenge,{x:0.8,y:4.0,w:11.5,h:0.5,fontSize:14,bold:true,color:codeFg});
+  // 底部鼓励
+  s11.addShape('rect',{x:0.5,y:4.8,w:12.3,h:1.8,fill:{color:bg},rectRadius:.08});
+  s11.addText('💪 学习建议',{x:0.8,y:4.95,w:3,h:0.3,fontSize:10,bold:true,color:grey});
+  s11.addText(learnPath.nextStep,{x:0.8,y:5.3,w:11.5,h:0.5,fontSize:12,bold:true,color:dark});
+  s11.addText('庞凯匀 · 230152061 · 代码解释器 v4.5 · 期末考核项目',{x:0.5,y:6.4,w:8,h:0.3,fontSize:9,color:muted});
+  s11.addText('学习路径基于代码模式检测自动生成 · 仅供参考',{x:0.5,y:6.7,w:8,h:0.3,fontSize:8,color:muted});
+  addFooter(s11);
 
   return ppt;
 }
@@ -1340,42 +1839,176 @@ function updateBatchSelectionInfo(){
   var bb=document.getElementById('batchExportPptBtn');if(bb)bb.disabled=Object.keys(selectedHistoryIdx).length===0;
 }
 // Word 报告导出
-function exportWord(){
-  var now=new Date();var sp=Object.entries(appStats.patternStats).sort(function(a,b){return b[1]-a[1]}).slice(0,3);
-  var sm=Object.entries(appStats.metaphorHits).sort(function(a,b){return b[1]-a[1]}).slice(0,3);
-  var trendLines='';for(var i=6;i>=0;i--){var d=new Date();d.setDate(d.getDate()-i);var key=d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0');var cnt=(appStats.parseDays||{})[key]||0;trendLines+='<tr><td>'+(d.getMonth()+1)+'/'+d.getDate()+'</td><td>'+cnt+' 次</td></tr>';}
+// 周期选择弹窗 → Word 导出
+function showPeriodPicker(){
+  try{
+  var overlay=document.createElement('div');overlay.style.cssText='position:fixed;left:0;top:0;right:0;bottom:0;background:rgba(7,16,33,0.5);z-index:9998;display:flex;align-items:center;justify-content:center';
+  overlay.onclick=function(e){if(e.target===overlay){try{overlay.remove();}catch(ex){}}};
+  var box=document.createElement('div');box.style.cssText='background:var(--surface);padding:24px 28px;border-radius:12px;text-align:center;border:1px solid var(--border);box-shadow:0 8px 32px rgba(0,0,0,0.12);z-index:9999';
+  box.innerHTML='<h3 style="margin-bottom:6px">📊 选择报告周期</h3><p style="font-size:12px;color:var(--text2);margin-bottom:16px">报告将只包含所选周期内的解析数据</p>';
+  var periods=[[7,'本周'],[30,'本月'],[0,'全部']];
+  for(var pi=0;pi<periods.length;pi++){
+    (function(days,label){
+      var b=document.createElement('button');b.className='btn';b.style.cssText='margin:4px 6px;padding:10px 18px;font-size:13px;min-height:auto;display:block;width:100%';
+      b.textContent='📅 '+label+' · 最近'+(days===0?'开始至今':days+'天');
+      b.onclick=function(e){e.stopPropagation();try{overlay.remove();}catch(ex){}exportWord(days);};
+      box.appendChild(b);
+    })(periods[pi][0],periods[pi][1]);
+  }
+  var cancel=document.createElement('button');cancel.className='btn';cancel.style.cssText='margin:10px 4px 0;padding:8px 16px;font-size:12px;min-height:auto;display:block;width:100%';cancel.textContent='取消';
+  cancel.onclick=function(e){e.stopPropagation();try{overlay.remove();}catch(ex){};};box.appendChild(cancel);
+  overlay.appendChild(box);document.body.appendChild(overlay);
+  }catch(e){showToast('弹窗失败：'+e.message);}
+}
+// Word 导出（支持周期筛选）
+function exportWord(periodDays){
+  try{
+  periodDays=periodDays||0;
+  var now=new Date();var cutoff=periodDays>0?now.getTime()-periodDays*86400000:0;
+  var pHistory=periodDays>0?(appStats.history||[]).filter(function(h){return h.timestamp>=cutoff;}):(appStats.history||[]);
+  var periodTitle=periodDays===7?'本周':periodDays===30?'本月':'全部历史';
+  var pTotal=pHistory.length;
+  var pJava=pHistory.filter(function(h){return h.language==='java';}).length;
+  var pPython=pHistory.filter(function(h){return h.language==='python';}).length;
+  var maxT_=Math.max(appStats.total,1);
+  var pPats={};for(var i=0;i<pHistory.length;i++){var pd=pHistory[i].parsedData;if(pd){var pts=detectPatterns(pd,(pd.rawCode||''));var vals=patternValues(pts);for(var j=0;j<vals.length;j++)pPats[vals[j]]=(pPats[vals[j]]||0)+1;}}
+  var sp=Object.entries(pPats).sort(function(a,b){return b[1]-a[1]}).slice(0,3);
+  var pMets={};for(var i=0;i<pHistory.length;i++){var fn=(pHistory[i].funcName||'').toLowerCase();for(var j=0;j<METAPHOR_LIBRARY.length;j++){var e=METAPHOR_LIBRARY[j];for(var k=0;k<e.keywords.length;k++){if(fn.indexOf(e.keywords[k].toLowerCase())!==-1){pMets[e.keywords[0]]=(pMets[e.keywords[0]]||0)+1;break;}}}}
+  var sm=Object.entries(pMets).sort(function(a,b){return b[1]-a[1]}).slice(0,3);
+  var trendBars='';var tData=[];var maxC=0;for(var i=6;i>=0;i--){var d=new Date();d.setDate(d.getDate()-i);var key=d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0');var cnt=(appStats.parseDays||{})[key]||0;if(periodDays>0){var dayStart=new Date(d.getFullYear(),d.getMonth(),d.getDate()).getTime();var dayEnd=dayStart+86400000;cnt=pHistory.filter(function(h){return h.timestamp>=dayStart&&h.timestamp<dayEnd;}).length;}tData.push({date:(d.getMonth()+1)+'/'+d.getDate(),count:cnt});if(cnt>maxC)maxC=cnt;}maxC=Math.max(maxC,1);
+  for(var i=0;i<tData.length;i++){var bars='';for(var b=0;b<Math.round(tData[i].count/maxC*20);b++)bars+='█';if(bars.length===0&&tData[i].count===0)bars='—';trendBars+='<tr><td>'+tData[i].date+'</td><td style="font-family:monospace;color:#3B82F6;letter-spacing:-1px">'+bars+'</td><td style="text-align:right">'+tData[i].count+' 次</td></tr>';}
+  var scoreHistory=pHistory.filter(function(h){return typeof h.healthScore==='number';});
+  var greenCount=scoreHistory.filter(function(h){return h.healthScore>=80;}).length;
+  var yellowCount=scoreHistory.filter(function(h){return h.healthScore>=50&&h.healthScore<80;}).length;
+  var redCount=scoreHistory.filter(function(h){return h.healthScore<50;}).length;
+  var scoreTotal=Math.max(1,scoreHistory.length);
+  var recent5=pHistory.slice(0,5);var recentLines='';
+  if(recent5.length===0)recentLines='<tr><td colspan="5" style="color:#94A3B8;text-align:center">该周期内暂无解析记录</td></tr>';
+  else for(var i=0;i<recent5.length;i++){var h=recent5[i];var sc=(typeof h.healthScore==='number')?h.healthScore:'—';var scClr=sc>=80?'#10B981':sc>=50?'#F59E0B':'#EF4444';var scText=typeof sc==='number'?sc+' 分':sc;var fn2=h.customName||h.funcName||'未命名';recentLines+='<tr><td>'+(i+1)+'</td><td>'+(h.language==='java'?'☕ Java':'🐍 Python')+'</td><td><strong>'+escapeHtml(fn2)+'</strong></td><td style="color:'+scClr+';font-weight:600">'+scText+'</td><td style="font-size:11px;color:#94A3B8">'+timeAgo(h.timestamp)+'</td></tr>';}
   var badgeCount=Object.values(appStats.badgeState).filter(function(x){return x&&x.unlocked}).length;
-  // 生成分析摘要
+  var jp=Math.round(appStats.javaCount/maxT_*100);var pp=Math.round(appStats.pythonCount/maxT_*100);
+  var scored=scoreHistory.slice(0,20);
   var summary='';
-  if(appStats.total>0){
-    summary='本报告统计了 '+appStats.total+' 次解析活动。其中 Java 代码占 '+Math.round(appStats.javaCount/Math.max(1,appStats.total)*100)+'%，Python 代码占 '+Math.round(appStats.pythonCount/Math.max(1,appStats.total)*100)+'%。';
-    if(sp.length>0)summary+='最常见的代码模式是「'+sp[0][0]+'」（出现 '+sp[0][1]+' 次）。';
-    var avgScore=appStats.history.filter(function(h){return typeof h.healthScore==='number'}).reduce(function(a,b,i,arr){return a+b.healthScore/arr.length},0);
-    if(avgScore>0)summary+='代码健康度平均分为 '+Math.round(avgScore)+' 分（'+(avgScore>=80?'优秀':avgScore>=50?'一般':'需优化')+'）。';
-    summary+='已解锁 '+badgeCount+'/'+Object.keys(BADGES_DEF).length+' 枚徽章。';
-  }else{summary='本报告生成时尚未有解析记录。开始解析代码后，统计数据将自动更新。';}
-  var html='<html><head><meta charset="utf-8"><title>代码智能说明书统计报告</title><style>'+
-    'body{font-family:Arial,"微软雅黑",sans-serif;padding:40px;color:#1E293B}'+
-    '.header{background:#3B82F6;color:#fff;padding:28px 24px;border-radius:6px;margin-bottom:24px}'+
-    '.header h1{margin:0;font-size:22px}.header p{margin:4px 0 0;font-size:12px;opacity:.9}'+
-    'h2{font-size:16px;color:#3B82F6;border-bottom:2px solid #E2EDF8;padding-bottom:6px;margin-top:28px}'+
+  if(pTotal>0){
+    var uniqueFuncs={};for(var i=0;i<pHistory.length;i++)uniqueFuncs[pHistory[i].funcName||'']=true;var funcCount=Object.keys(uniqueFuncs).length;
+    summary='<strong>'+periodTitle+'</strong>共统计 <strong>'+pTotal+'</strong> 次解析活动，涉及 <strong>'+funcCount+'</strong> 个不同函数。';
+    summary+='☕ Java 占比 <strong>'+Math.round(pJava/Math.max(1,pTotal)*100)+'%</strong>（'+pJava+' 次），🐍 Python 占比 <strong>'+Math.round(pPython/Math.max(1,pTotal)*100)+'%</strong>（'+pPython+' 次）。';
+    var avgScore=scoreHistory.reduce(function(a,b,i,arr){return a+b.healthScore/arr.length},0);
+    if(avgScore>0)summary+='代码健康度平均分为 <strong>'+Math.round(avgScore)+'</strong> 分（'+(avgScore>=80?'整体优秀':avgScore>=50?'尚可':'需注意质量')+'）。';
+    if(sp.length>0)summary+='最常见模式：「<strong>'+sp[0][0]+'</strong>」（'+sp[0][1]+' 次）。';
+    if(scored.length>=2){scored.sort(function(a,b){return b.healthScore-a.healthScore;});summary+='最佳代码：<strong>'+escapeHtml(scored[0].customName||scored[0].funcName||'?')+'</strong>（'+scored[0].healthScore+' 分）；最需改进：<strong>'+escapeHtml(scored[scored.length-1].customName||scored[scored.length-1].funcName||'?')+'</strong>（'+scored[scored.length-1].healthScore+' 分）。';}
+    if(!periodDays&&appStats.consecutiveSuccess>0)summary+='已连续解析 <strong>'+appStats.consecutiveSuccess+'</strong> 天';
+  }else{summary='<strong>'+periodTitle+'</strong>暂无解析记录。快去「说明书」面板解析几段代码吧！';}
+  var html='<html xmlns:o="urn:schemas-microsoft-com:office:office" xmlns:w="urn:schemas-microsoft-com:office:word" xmlns="http://www.w3.org/TR/REC-html40"><head><meta charset="utf-8"><meta http-equiv="Content-Type" content="text/html; charset=utf-8"><!--[if gte mso 9]><xml><w:WordDocument><w:View>Print</w:View></w:WordDocument></xml><![endif]--><title>'+periodTitle+'代码学习报告</title><style>'+
+    '@page{size:A4;margin:2cm}body{font-family:SimSun,宋体,serif;padding:20px;color:#000;font-size:12pt}'+
+    '.header{background:#3B82F6;color:#fff;padding:24px 20px;margin-bottom:24px}'+
+    '.header h1{margin:0;font-size:24px}.header p{margin:6px 0 0;font-size:12px;opacity:.85}'+
+    'h2{font-size:16px;color:#1E293B;border-left:3px solid #3B82F6;padding-left:10px;margin-top:32px}'+
     'table{border-collapse:collapse;width:100%;margin:12px 0;font-size:13px}'+
     'td,th{border:1px solid #E2EDF8;padding:9px 14px;text-align:left}'+
     'th{background:#F1F5F9;font-weight:600;color:#475569;font-size:11px;text-transform:uppercase}'+
-    'tr:nth-child(even){background:#F8FAFC}.summary-box{background:#F0FDF4;border-left:3px solid #10B981;padding:14px 18px;border-radius:4px;margin:20px 0;font-size:13px;line-height:1.8}.muted{color:#94A3B8;font-size:11px}.footer{margin-top:32px;padding-top:16px;border-top:1px solid #E2EDF8;font-size:11px;color:#94A3B8}'+
+    'tr:nth-child(even){background:#F8FAFC}'+
+    '.summary-box{background:#F0FDF4;border-left:4px solid #10B981;padding:16px 20px;border-radius:4px;margin:24px 0;font-size:13px;line-height:2.0}'+
+    '.warn-box{background:#FFFBEB;border-left:4px solid #F59E0B;padding:14px 18px;border-radius:4px;margin:16px 0;font-size:13px}'+
+    '.muted{color:#94A3B8;font-size:11px}.footer{margin-top:36px;padding-top:16px;border-top:2px solid #E2EDF8;font-size:11px;color:#94A3B8}'+
+    '.two-col{display:flex;gap:20px}.two-col>div{flex:1}'+
     '</style></head><body>';
-  html+='<div class="header"><h1>📊 代码智能说明书 · 统计报告</h1><p>生成时间：'+now.toLocaleString()+'</p><p>庞凯匀 · 230152061 · 代码解释器 v4.4.1</p></div>';
-  html+='<h2>仪表盘统计</h2><table><tr><th>指标</th><th>数值</th></tr><tr><td>总解析次数</td><td><strong>'+appStats.total+'</strong></td></tr><tr><td>Java 解析次数</td><td><strong>'+appStats.javaCount+'</strong></td></tr><tr><td>Python 解析次数</td><td><strong>'+appStats.pythonCount+'</strong></td></tr><tr><td>平均耗时</td><td><strong>'+(appStats.avgTime||0)+' ms</strong></td></tr><tr><td>连续解析天数</td><td><strong>'+appStats.consecutiveSuccess+' 天</strong></td></tr><tr><td>已解锁徽章</td><td><strong>'+badgeCount+' / '+Object.keys(BADGES_DEF).length+'</strong></td></tr></table>';
-  html+='<div class="summary-box"><strong>📋 分析摘要</strong><p style="margin:6px 0 0">'+summary+'</p></div>';
-  html+='<h2>热门模式排行</h2><table><tr><th>排名</th><th>模式</th><th>次数</th></tr>';if(sp.length===0)html+='<tr><td colspan="3">暂无数据</td></tr>';else for(var i=0;i<sp.length;i++)html+='<tr><td>'+(i+1)+'</td><td>'+sp[i][0]+'</td><td><strong>'+sp[i][1]+'</strong></td></tr>';html+='</table>';
-  html+='<h2>比喻命中率排行</h2><table><tr><th>排名</th><th>关键词</th><th>次数</th></tr>';if(sm.length===0)html+='<tr><td colspan="3">暂无数据</td></tr>';else for(var i=0;i<sm.length;i++)html+='<tr><td>'+(i+1)+'</td><td>'+sm[i][0]+'</td><td><strong>'+sm[i][1]+'</strong></td></tr>';html+='</table>';
-  html+='<h2>最近 7 天解析趋势</h2><table><tr><th>日期</th><th>解析次数</th></tr>'+trendLines+'</table>';
-  html+='<div class="footer">本报告由「代码智能说明书与文档自动化系统」自动生成 · 纯前端 · 零后端依赖</div>';
+  html+='<div class="header"><h1>📊 代码智能说明书 · '+periodTitle+'学习报告</h1><p>生成时间：'+now.toLocaleString()+' | 周期：'+periodTitle+' | 庞凯匀 · 230152061 · v4.5</p></div>';
+  html+='<div class="summary-box"><strong>📋 '+periodTitle+'分析摘要</strong><p style="margin:8px 0 0">'+summary+'</p></div>';
+  html+='<div class="two-col"><div><h2>📊 '+periodTitle+'统计</h2><table><tr><th>指标</th><th>数值</th></tr><tr><td>总解析次数</td><td><strong>'+pTotal+'</strong></td></tr><tr><td>☕ Java 解析</td><td><strong>'+pJava+'</strong>（'+(pTotal>0?Math.round(pJava/pTotal*100):0)+'%）</td></tr><tr><td>🐍 Python 解析</td><td><strong>'+pPython+'</strong>（'+(pTotal>0?Math.round(pPython/pTotal*100):0)+'%）</td></tr><tr><td>🏆 全局已解锁</td><td><strong>'+badgeCount+' / '+Object.keys(BADGES_DEF).length+'</strong></td></tr></table></div>';
+  html+='<div><h2>💊 健康度分布</h2><table><tr><th>等级</th><th>数量</th><th>占比</th></tr><tr><td>🟢 健康（≥80分）</td><td><strong>'+greenCount+'</strong></td><td>'+Math.round(greenCount/scoreTotal*100)+'%</td></tr><tr><td>🟡 一般（50-79分）</td><td><strong>'+yellowCount+'</strong></td><td>'+Math.round(yellowCount/scoreTotal*100)+'%</td></tr><tr><td>🔴 需优化（＜50分）</td><td><strong>'+redCount+'</strong></td><td>'+Math.round(redCount/scoreTotal*100)+'%</td></tr></table>';
+  if(redCount>0)html+='<div class="warn-box"><strong>⚠️</strong> 有 '+redCount+' 段代码健康度低于 50 分</div>';
+  html+='</div></div>';
+  html+='<h2>🕐 '+periodTitle+'解析记录</h2><table><tr><th>#</th><th>语言</th><th>函数名</th><th>健康度</th><th>时间</th></tr>'+recentLines+'</table>';
+  html+='<div class="two-col"><div><h2>🔥 '+periodTitle+'热门模式</h2><table><tr><th>排名</th><th>模式</th><th>次数</th></tr>';if(sp.length===0)html+='<tr><td colspan="3">暂无数据</td></tr>';else for(var i=0;i<sp.length;i++)html+='<tr><td>'+(i+1)+'</td><td>'+sp[i][0]+'</td><td><strong>'+sp[i][1]+'</strong></td></tr>';html+='</table></div>';
+  html+='<div><h2>🎯 '+periodTitle+'比喻命中</h2><table><tr><th>排名</th><th>关键词</th><th>次数</th></tr>';if(sm.length===0)html+='<tr><td colspan="3">暂无数据</td></tr>';else for(var i=0;i<sm.length;i++)html+='<tr><td>'+(i+1)+'</td><td>'+sm[i][0]+'</td><td><strong>'+sm[i][1]+'</strong></td></tr>';html+='</table></div></div>';
+  html+='<h2>📈 最近 7 天解析趋势</h2><table><tr><th>日期</th><th style="width:60%">趋势</th><th style="text-align:right">次数</th></tr>'+trendBars+'</table>';
+  // ===== 新增：健康度趋势（纯文字表格） =====
+  html+='<h2>📈 近 7 次解析健康度趋势</h2>';
+  var healthTrendData=[];
+  var recentHealth=pHistory.slice(0,7).reverse();
+  for(var hti=0;hti<recentHealth.length;hti++){
+    var rh=recentHealth[hti];
+    if(typeof rh.healthScore==='number'){
+      healthTrendData.push({score:rh.healthScore,label:rh.customName||rh.funcName||('#'+(hti+1))});
+    }
+  }
+  html+='<table><tr><th>#</th><th>函数名</th><th>健康度</th><th>等级</th></tr>';
+  if(healthTrendData.length===0)html+='<tr><td colspan="4" style="color:#94A3B8;text-align:center">暂无健康度数据</td></tr>';
+  else for(var hti2=0;hti2<healthTrendData.length;hti2++){
+    var htd=healthTrendData[hti2];
+    var htdLvl=htd.score>=80?'🟢 健康':htd.score>=50?'🟡 一般':'🔴 需优化';
+    var htdClr=htd.score>=80?'#10B981':htd.score>=50?'#F59E0B':'#EF4444';
+    html+='<tr><td>'+(hti2+1)+'</td><td><strong>'+escapeHtml(htd.label)+'</strong></td><td style="color:'+htdClr+';font-weight:600">'+htd.score+' 分</td><td>'+htdLvl+'</td></tr>';
+  }
+  html+='</table>';
+  // ===== 新增：最需改进函数 Top 3 =====
+  html+='<h2>⚠️ 最需改进的函数 Top 3</h2>';
+  var worstFuncs=scoreHistory.filter(function(h){return h.healthScore<80;}).sort(function(a,b){return a.healthScore-b.healthScore;}).slice(0,3);
+  html+='<table><tr><th>排名</th><th>函数名</th><th>健康度</th><th>改进建议</th></tr>';
+  if(worstFuncs.length===0){
+    html+='<tr><td colspan="4" style="color:#10B981;text-align:center">🎉 所有函数健康度良好！</td></tr>';
+  }else{
+    for(var wfi=0;wfi<worstFuncs.length;wfi++){
+      var wf=worstFuncs[wfi];
+      var wfScore=wf.healthScore||0;
+      var wfSug='';
+      var wfParsed=wf.parsedData;
+      if(wfParsed){
+        if(wfParsed.parameters.length>3)wfSug='参数过多（'+wfParsed.parameters.length+'个），建议使用对象封装';
+        else if(wfParsed.rawCode&&wfParsed.rawCode.split('\n').length>20)wfSug='函数体较长，建议拆分为多个子函数';
+        else if(!wfParsed.hasTryCatch)wfSug='缺少异常处理，建议添加 try-catch';
+        else wfSug='代码复杂度偏高，考虑重构简化';
+      }else{wfSug='建议重新解析获取详细分析';}
+      var wfName=wf.customName||wf.funcName||'未命名';
+      html+='<tr><td>'+(wfi+1)+'</td><td><strong>'+escapeHtml(wfName)+'</strong></td><td style="color:#EF4444;font-weight:600">'+wfScore+' 分</td><td>'+escapeHtml(wfSug)+'</td></tr>';
+    }
+  }
+  html+='</table>';
+  // ===== 新增：学习建议 =====
+  html+='<h2>🎓 学习建议与挑战推荐</h2>';
+  var topPattern=sp.length>0?sp[0][0]:null;
+  var learnPath=(function(){
+    if(!topPattern)return LEARNING_PATHS['default'];
+    for(var lpk in LEARNING_PATHS){if(topPattern.indexOf(lpk)!==-1||lpk.indexOf(topPattern)!==-1)return LEARNING_PATHS[lpk];}
+    return LEARNING_PATHS['default'];
+  })();
+  html+='<div class="summary-box" style="background:#F0F9FF;border-left-color:#3B82F6"><strong>📚 推荐学习方向：'+(learnPath.title||'代码质量提升')+'</strong><p style="margin:8px 0 0">'+(learnPath.description||'持续学习和实践是提升编程能力的最佳方式。')+'</p></div>';
+  html+='<table><tr><th>类型</th><th>内容</th></tr>';
+  html+='<tr><td>核心模式</td><td><strong>'+(topPattern||'通用处理')+'</strong></td></tr>';
+  html+='<tr><td>推荐资源</td><td>'+(learnPath.resources||[]).map(function(r,i){return (i+1)+'. '+r;}).join('<br>')+'</td></tr>';
+  html+='<tr><td>实践建议</td><td>'+(learnPath.nextStep||'选择一个感兴趣的方向深入学习')+'</td></tr>';
+  html+='<tr><td>挑战题目</td><td><strong>'+(learnPath.challenge||'LeetCode 热门 100 题')+'</strong></td></tr>';
+  html+='</table>';
+  // 预定义题库
+  var CHALLENGE_POOL=[{q:'实现快速排序算法并分析其时间复杂度',diff:'中等'},{q:'实现 LRU 缓存（最近最少使用）',diff:'中等'},{q:'实现二分查找的递归和迭代两个版本',diff:'简单'},{q:'实现二叉树的层序遍历',diff:'中等'},{q:'实现生产者-消费者模式（多线程）',diff:'困难'},{q:'实现一个简单的 REST API 客户端',diff:'简单'},{q:'实现字符串的全排列（回溯算法）',diff:'中等'},{q:'实现合并两个有序数组（双指针）',diff:'简单'}];
+  var challengePick=CHALLENGE_POOL[Math.floor((pHistory.length||1)*7%CHALLENGE_POOL.length)];
+  html+='<div class="warn-box"><strong>🏆 本周推荐挑战</strong><p style="margin:6px 0 0">'+challengePick.q+'（难度：'+challengePick.diff+'）</p></div>';
+  // ===== 新增：附录——本周解析代码清单 =====
+  html+='<h2>📋 附录：'+periodTitle+'解析代码清单</h2>';
+  html+='<table><tr><th>#</th><th>语言</th><th>函数名</th><th>健康度</th><th>代码片段</th><th>解析时间</th></tr>';
+  if(pHistory.length===0){
+    html+='<tr><td colspan="6" style="color:#94A3B8;text-align:center">该周期内暂无解析记录</td></tr>';
+  }else{
+    for(var li=0;li<Math.min(pHistory.length,20);li++){
+      var lh=pHistory[li];
+      var lhName=lh.customName||lh.funcName||'未命名';
+      var lhScore=(typeof lh.healthScore==='number')?lh.healthScore+' 分':'—';
+      var lhClr2=(typeof lh.healthScore==='number')?(lh.healthScore>=80?'#10B981':lh.healthScore>=50?'#F59E0B':'#EF4444'):'#94A3B8';
+      var lhCode=lh.code.replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/\n/g,' ').substring(0,50);
+      var lhTime=new Date(lh.timestamp).toLocaleString();
+      html+='<tr><td>'+(li+1)+'</td><td>'+(lh.language==='java'?'☕ Java':'🐍 Python')+'</td><td><strong>'+escapeHtml(lhName)+'</strong></td><td style="color:'+lhClr2+';font-weight:600">'+lhScore+'</td><td style="font-size:10px;font-family:Consolas,monospace;max-width:200px;overflow:hidden">'+lhCode+'</td><td style="font-size:10px;color:#94A3B8">'+lhTime+'</td></tr>';
+    }
+  }
+  html+='</table>';
+  html+='<div class="footer">本报告由「代码智能说明书与文档自动化系统」自动生成 · 纯前端 · 零后端依赖<br>庞凯匀 · 230152061 · 期末考核项目 · v4.5 · '+periodTitle+'周期<br>本报告包含：统计摘要 · 健康度趋势 · 改进建议 · 学习推荐 · 代码清单</div>';
   html+='</body></html>';
-  var blob=new Blob([html],{type:'application/vnd.openxmlformats-officedocument.wordprocessingml.document'});
-  var a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download='代码说明书统计报告_'+now.toISOString().slice(0,10)+'.docx';a.click();URL.revokeObjectURL(a.href);
-  var ws=document.getElementById('wordStatus');if(ws)ws.textContent='导出成功！';showToast('Word 报告已下载');
+  var blob=new Blob(['﻿'+html],{type:'application/msword'});
+  var a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download=periodTitle+'代码学习报告_'+now.toISOString().slice(0,10)+'.doc';a.click();URL.revokeObjectURL(a.href);
+  var ws=document.getElementById('wordStatus');if(ws)ws.textContent='导出成功（'+periodTitle+'）！';showToast(periodTitle+'Word 报告已下载');
+  }catch(e){var msg=e&&e.message?e.message:String(e);showToast('导出失败：'+msg);var ws2=document.getElementById('wordStatus');if(ws2)ws2.textContent='失败：'+msg;}
 }
+
 // TTS 讲解模态框
 var ttsModal=null,ttsSlideIdx=0,ttsUtterance=null,ttsSlides=[];
 function buildTtsSlides(p,c,l){
@@ -1384,9 +2017,9 @@ function buildTtsSlides(p,c,l){
   var pd=p.parameters.map(function(pp){return pp.type+' '+pp.name}).join(', ');var sig=(l==='java'?p.returnType+' '+p.methodName+'('+pd+')':'def '+p.methodName+'('+pd+')'+(p.returnType&&p.returnType!=='void'?' -> '+p.returnType:''));
   ttsSlides.push({title:'函数签名',html:'<h2>函数签名与参数</h2><pre>'+escapeHtml(sig)+'</pre>'+(p.parameters.length>0?'<table><tr><th>#</th><th>参数名</th><th>类型</th></tr>'+p.parameters.map(function(pp,i2){return'<tr><td>'+(i2+1)+'</td><td>'+escapeHtml(pp.name)+'</td><td>'+escapeHtml(pp.type||'Any')+'</td></tr>'}).join('')+'</table>':'<p>无参数</p>'),narration:'这是函数 '+p.methodName+' 的签名。它接收 '+p.parameters.length+' 个参数，返回值类型为 '+p.returnType+'。函数名清晰地表达了它的意图。'});
   ttsSlides.push({title:'返回值',html:'<h2>返回值与异常处理</h2><p><strong>返回值类型：</strong>'+escapeHtml(p.returnType||'void')+'</p><p><strong>异常处理：</strong>'+(p.hasTryCatch?'包含 try-catch/except':'未检测到异常处理')+'</p><p><strong>依赖：</strong>'+(p.dependencies.length>0?p.dependencies.join(', '):'无外部依赖')+'</p>',narration:'此函数的返回值类型为 '+p.returnType+'。'+(p.hasTryCatch?'它包含了异常处理机制，能够在出错时安全兜底。':'它没有显式的异常处理，使用者需要注意传入正确的参数。')});
-  var ex=generateExampleCall(p),exCode=(l==='java'?p.returnType+' result = ':'')+ex+';';
+  var ex=generateExampleCall(p),exCode=(l==='java'?p.returnType+' result = '+ex+';':ex);
   ttsSlides.push({title:'示例调用',html:'<h2>示例调用代码</h2><pre>'+escapeHtml(exCode)+'</pre><p style="color:var(--text2)">根据参数类型自动生成</p>',narration:'这是一个调用示例：'+exCode.replace(/"/g,'')+'。你可以复制这段代码直接运行测试。'});
-  var tips2=generateBestPractices(p,c).slice(0,4);
+  var tips2=generateBestPractices(p,c,l).tips.slice(0,4);
   ttsSlides.push({title:'最佳实践',html:'<h2>最佳实践建议</h2>'+tips2.map(function(tp,i3){return'<p>'+(i3+1)+'. '+escapeHtml(tp)+'</p>'}).join(''),narration:'以下是一些最佳实践建议：'+tips2.join('。')+'。遵循这些建议可以让代码更健壮和可维护。'});
   ttsSlides.push({title:'仪表盘统计',html:'<h2>仪表盘统计快照</h2><p>总解析 '+appStats.total+' 次 | Java '+appStats.javaCount+' 次 | Python '+appStats.pythonCount+' 次</p><p>平均耗时 '+(appStats.avgTime||0)+' ms | 连续 '+appStats.consecutiveSuccess+' 天</p>',narration:'最后是仪表盘统计快照：截至目前，共解析了 '+appStats.total+' 次代码，其中 Java '+appStats.javaCount+' 次，Python '+appStats.pythonCount+' 次。感谢您的观看！'});
 }
