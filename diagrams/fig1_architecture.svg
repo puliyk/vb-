@@ -1,0 +1,66 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 820" width="1200" height="820">
+<style>
+  text { font-family: "Microsoft YaHei","PingFang SC","Noto Sans SC",sans-serif; }
+  .title { font-size:15px; font-weight:700; fill:#1E293B; }
+  .subtitle { font-size:11px; fill:#64748B; }
+  .box { fill:#FFFFFF; stroke:#CBD5E1; stroke-width:1.2; rx:6; }
+  .box-accent { fill:#EFF6FF; stroke:#93C5FD; stroke-width:1.2; rx:6; }
+  .layer-label { font-size:13px; font-weight:700; fill:#1E40AF; }
+  .module-name { font-size:11px; font-weight:600; fill:#0F172A; }
+  .module-desc { font-size:9px; fill:#64748B; }
+  .badge { font-size:10px; font-weight:600; }
+  .arrow { stroke:#94A3B8; stroke-width:1.5; fill:none; marker-end:url(#arrowhead); }
+  .arrow-thin { stroke:#CBD5E1; stroke-width:1; fill:none; }
+  .dashed { stroke-dasharray: 4 3; }
+</style>
+<defs>
+  <marker id="arrowhead" markerWidth="8" markerHeight="6" refX="8" refY="3" orient="auto">
+    <polygon points="0 0, 8 3, 0 6" fill="#94A3B8"/>
+  </marker>
+</defs>
+<rect width="1200" height="820" fill="#F8FAFC" rx="4"/>
+<rect x="20" y="40" width="1160" height="720" class="box"/><text x="600" y="22" class="title" text-anchor="middle">系统三层架构图</text><rect x="40" y="55" width="1120" height="240" class="box-accent"/><text x="60" y="72" class="layer-label" text-anchor="start">【表现层】Presentation Layer</text><rect x="80" y="90" width="180" height="80" class="box"/><text x="170" y="108" class="module-name" text-anchor="middle">📊 仪表盘</text>
+<text x="170" y="123" class="module-name" text-anchor="middle">Dashboard</text><text x="170" y="135" class="module-desc" text-anchor="middle">·统计卡片 ·日历热力</text>
+<text x="170" y="150" class="module-desc" text-anchor="middle">·趋势图 ·排行榜</text><rect x="280" y="90" width="180" height="80" class="box"/><text x="370" y="108" class="module-name" text-anchor="middle">📝 说明书</text>
+<text x="370" y="123" class="module-name" text-anchor="middle">Doc Panel</text><text x="370" y="135" class="module-desc" text-anchor="middle">·技术版 ·小白版</text>
+<text x="370" y="150" class="module-desc" text-anchor="middle">·语义解释 ·代码输入</text><rect x="480" y="90" width="180" height="80" class="box"/><text x="570" y="108" class="module-name" text-anchor="middle">🏋️ 练习</text>
+<text x="570" y="123" class="module-name" text-anchor="middle">Practice</text><text x="570" y="135" class="module-desc" text-anchor="middle">·对比评估 ·每日挑战</text>
+<text x="570" y="150" class="module-desc" text-anchor="middle">·Pyodide ·学习笔记</text><rect x="680" y="90" width="180" height="80" class="box"/><text x="770" y="108" class="module-name" text-anchor="middle">🕐 历史</text>
+<text x="770" y="123" class="module-name" text-anchor="middle">History</text><text x="770" y="135" class="module-desc" text-anchor="middle">·搜索筛选 ·分页浏览</text>
+<text x="770" y="150" class="module-desc" text-anchor="middle">·批量选择 ·重命名</text><rect x="880" y="90" width="180" height="80" class="box"/><text x="970" y="108" class="module-name" text-anchor="middle">🏆 成就</text>
+<text x="970" y="123" class="module-name" text-anchor="middle">Badges</text><text x="970" y="135" class="module-desc" text-anchor="middle">·徽章墙 ·进度条</text>
+<text x="970" y="150" class="module-desc" text-anchor="middle">·解锁弹窗 ·里程碑</text><rect x="80" y="185" width="1040" height="50" class="box"/><text x="600" y="205" class="module-name" text-anchor="middle">📄 AI 文档面板 (PPT / Word / TTS) — 一键导出 7页PPT + Word分析报告 + 语音讲解</text><text x="600" y="222" class="module-desc" text-anchor="middle">PptxGenJS · JSZip · html2canvas · Web Speech API</text><line x1="600" y1="295" x2="600" y2="315" class="arrow"/><rect x="40" y="320" width="1120" height="190" class="box-accent"/><text x="60" y="338" class="layer-label" text-anchor="start">【业务逻辑层】Business Logic Layer</text><rect x="80" y="355" width="200" height="105" class="box"/><text x="180" y="373" class="module-name" text-anchor="middle">解析引擎</text><text x="180" y="393" class="module-desc" text-anchor="middle">parseJava()</text>
+<text x="180" y="408" class="module-desc" text-anchor="middle">parsePython()</text>
+<text x="180" y="423" class="module-desc" text-anchor="middle">正则提取: 函数名</text>
+<text x="180" y="438" class="module-desc" text-anchor="middle">参数列表·返回类型</text>
+<text x="180" y="453" class="module-desc" text-anchor="middle">依赖/异常</text><rect x="280" y="355" width="200" height="105" class="box"/><text x="380" y="373" class="module-name" text-anchor="middle">比喻匹配器</text><text x="380" y="393" class="module-desc" text-anchor="middle">matchMeta-</text>
+<text x="380" y="408" class="module-desc" text-anchor="middle">phorEntry()</text>
+<text x="380" y="423" class="module-desc" text-anchor="middle">38条概念域映射</text>
+<text x="380" y="438" class="module-desc" text-anchor="middle">加权打分:</text>
+<text x="380" y="453" class="module-desc" text-anchor="middle">函数名+8 概念+6</text>
+<text x="380" y="468" class="module-desc" text-anchor="middle">代码体+3 模式+7</text><rect x="500" y="355" width="200" height="105" class="box"/><text x="600" y="373" class="module-name" text-anchor="middle">模式检测器</text><text x="600" y="393" class="module-desc" text-anchor="middle">detectPatterns()</text>
+<text x="600" y="408" class="module-desc" text-anchor="middle">12种模式:</text>
+<text x="600" y="423" class="module-desc" text-anchor="middle">·递归·排序·缓存</text>
+<text x="600" y="438" class="module-desc" text-anchor="middle">·工厂·I/O·校验</text>
+<text x="600" y="453" class="module-desc" text-anchor="middle">·循环·分支·聚合</text><rect x="730" y="355" width="200" height="105" class="box"/><text x="830" y="373" class="module-name" text-anchor="middle">健康度评估器</text><text x="830" y="393" class="module-desc" text-anchor="middle">calculateHealth</text>
+<text x="830" y="408" class="module-desc" text-anchor="middle">Score()</text>
+<text x="830" y="423" class="module-desc" text-anchor="middle">5维评分:</text>
+<text x="830" y="438" class="module-desc" text-anchor="middle">·参数·行数·嵌套</text>
+<text x="830" y="453" class="module-desc" text-anchor="middle">·圈复杂度·冗余</text><rect x="160" y="470" width="260" height="40" class="box"/><text x="290" y="488" class="module-name" text-anchor="middle">PPT 生成器</text><text x="290" y="503" class="module-desc" text-anchor="middle">generatePPTForCode()</text>
+<text x="290" y="518" class="module-desc" text-anchor="middle">·7页PPT模板</text>
+<text x="290" y="533" class="module-desc" text-anchor="middle">·PptxGenJS</text>
+<text x="290" y="548" class="module-desc" text-anchor="middle">·批量ZIP打包</text><rect x="440" y="470" width="260" height="40" class="box"/><text x="570" y="488" class="module-name" text-anchor="middle">Word 导出器</text><text x="570" y="503" class="module-desc" text-anchor="middle">exportWord()</text>
+<text x="570" y="518" class="module-desc" text-anchor="middle">·周期筛选</text>
+<text x="570" y="533" class="module-desc" text-anchor="middle">·HTML→Blob</text>
+<text x="570" y="548" class="module-desc" text-anchor="middle">·.docx下载</text><rect x="720" y="470" width="260" height="40" class="box"/><text x="850" y="488" class="module-name" text-anchor="middle">叙事生成器</text><text x="850" y="503" class="module-desc" text-anchor="middle">renderTechDoc() 技术版</text>
+<text x="850" y="518" class="module-desc" text-anchor="middle">renderBeginnerDoc() 小白版</text>
+<text x="850" y="533" class="module-desc" text-anchor="middle">renderSemanticDoc() 语义版</text>
+<text x="850" y="548" class="module-desc" text-anchor="middle">·推论标记(inferred)</text>
+<text x="850" y="563" class="module-desc" text-anchor="middle">·生活化比喻叙事</text><line x1="600" y1="510" x2="600" y2="530" class="arrow"/><rect x="40" y="535" width="1120" height="195" class="box-accent"/><text x="60" y="553" class="layer-label" text-anchor="start">【数据持久层】Data Layer</text><rect x="80" y="570" width="1040" height="140" class="box"/><text x="600" y="590" class="module-name" text-anchor="middle">localStorage: appStats</text><rect x="150" y="610" width="180" height="80" class="box"/><text x="240" y="635" class="module-desc" text-anchor="middle">total · javaCount</text>
+<text x="240" y="650" class="module-desc" text-anchor="middle">pythonCount · avgTime</text><rect x="350" y="610" width="180" height="80" class="box"/><text x="440" y="635" class="module-desc" text-anchor="middle">patternStats</text>
+<text x="440" y="650" class="module-desc" text-anchor="middle">"递归":5,"排序":3</text><rect x="550" y="610" width="180" height="80" class="box"/><text x="640" y="635" class="module-desc" text-anchor="middle">metaphorHits</text>
+<text x="640" y="650" class="module-desc" text-anchor="middle">"sort":12,"filter":7</text><rect x="750" y="610" width="180" height="80" class="box"/><text x="840" y="635" class="module-desc" text-anchor="middle">history [50条]</text>
+<text x="840" y="650" class="module-desc" text-anchor="middle">{code, lang, funcName,</text>
+<text x="840" y="665" class="module-desc" text-anchor="middle">timestamp, score}</text><rect x="950" y="610" width="180" height="80" class="box"/><text x="1040" y="635" class="module-desc" text-anchor="middle">badgeState</text>
+<text x="1040" y="650" class="module-desc" text-anchor="middle">first_blood:✓</text>
+<text x="1040" y="665" class="module-desc" text-anchor="middle">java_master:✓</text><rect x="80" y="700" width="1040" height="22" class="box"/><text x="600" y="716" class="module-desc" text-anchor="middle">favorites [收藏列表]  ·  notes [学习笔记]  ·  settings (主题/动画)  ·  practiceHistory</text></svg>

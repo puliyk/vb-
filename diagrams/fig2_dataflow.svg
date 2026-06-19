@@ -1,0 +1,32 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 900 1100" width="900" height="1100">
+<style>
+  text { font-family: "Microsoft YaHei","PingFang SC","Noto Sans SC",sans-serif; }
+  .title { font-size:15px; font-weight:700; fill:#1E293B; }
+  .subtitle { font-size:11px; fill:#64748B; }
+  .box { fill:#FFFFFF; stroke:#CBD5E1; stroke-width:1.2; rx:6; }
+  .box-accent { fill:#EFF6FF; stroke:#93C5FD; stroke-width:1.2; rx:6; }
+  .layer-label { font-size:13px; font-weight:700; fill:#1E40AF; }
+  .module-name { font-size:11px; font-weight:600; fill:#0F172A; }
+  .module-desc { font-size:9px; fill:#64748B; }
+  .badge { font-size:10px; font-weight:600; }
+  .arrow { stroke:#94A3B8; stroke-width:1.5; fill:none; marker-end:url(#arrowhead); }
+  .arrow-thin { stroke:#CBD5E1; stroke-width:1; fill:none; }
+  .dashed { stroke-dasharray: 4 3; }
+</style>
+<defs>
+  <marker id="arrowhead" markerWidth="8" markerHeight="6" refX="8" refY="3" orient="auto">
+    <polygon points="0 0, 8 3, 0 6" fill="#94A3B8"/>
+  </marker>
+</defs>
+<rect width="900" height="1100" fill="#F8FAFC" rx="4"/>
+<text x="450" y="22" class="title" text-anchor="middle">核心数据流图</text><rect x="300" y="40" width="300" height="36" class="box-accent"/><text x="450" y="63" class="module-name" text-anchor="middle">用户粘贴代码 (Java / Python)</text><line x1="450" y1="76" x2="450" y2="100" class="arrow"/><rect x="250" y="105" width="400" height="80" class="box"/><text x="450" y="123" class="module-name" text-anchor="middle">parseJava() / parsePython()</text><text x="450" y="148" class="module-desc" text-anchor="middle">输出: ParsedFunction { methodName, parameters[],</text><text x="450" y="163" class="module-desc" text-anchor="middle">  returnType, dependencies[], hasTryCatch, rawCode }</text><line x1="250" y1="145" x2="140" y2="200" class="arrow-thin"/><line x1="450" y1="185" x2="450" y2="210" class="arrow"/><line x1="650" y1="145" x2="760" y2="200" class="arrow-thin"/><rect x="30" y="215" width="200" height="55" class="box"/><text x="130" y="233" class="module-name" text-anchor="middle">matchMetaphorEntry()</text><text x="130" y="255" class="module-desc" text-anchor="middle">38条比喻库</text>
+<text x="130" y="270" class="module-desc" text-anchor="middle">加权评分</text><rect x="340" y="215" width="200" height="55" class="box"/><text x="440" y="233" class="module-name" text-anchor="middle">detectPatterns()</text><text x="440" y="255" class="module-desc" text-anchor="middle">12种模式检测</text>
+<text x="440" y="270" class="module-desc" text-anchor="middle">正则匹配</text><rect x="650" y="215" width="200" height="55" class="box"/><text x="750" y="233" class="module-name" text-anchor="middle">generateStatement</text>
+<text x="750" y="248" class="module-name" text-anchor="middle">Explanation()</text><text x="750" y="255" class="module-desc" text-anchor="middle">逐行翻译</text>
+<text x="750" y="270" class="module-desc" text-anchor="middle">if/for/return</text><line x1="130" y1="270" x2="130" y2="300" class="arrow-thin"/><line x1="450" y1="270" x2="450" y2="300" class="arrow-thin"/><line x1="750" y1="270" x2="750" y2="300" class="arrow-thin"/><rect x="80" y="305" width="180" height="28" class="box-accent"/><text x="170" y="324" class="module-desc" text-anchor="middle">{entry, matchQuality}</text><rect x="370" y="305" width="180" height="28" class="box-accent"/><text x="460" y="324" class="module-desc" text-anchor="middle">['递归','排序',...]</text><rect x="640" y="305" width="180" height="28" class="box-accent"/><text x="730" y="324" class="module-desc" text-anchor="middle">[逐行解释]</text><line x1="170" y1="333" x2="170" y2="380" class="arrow-thin"/><line x1="170" y1="380" x2="450" y2="380" class="arrow-thin"/><line x1="460" y1="333" x2="460" y2="380" class="arrow-thin"/><line x1="730" y1="333" x2="730" y2="380" class="arrow-thin"/><line x1="730" y1="380" x2="450" y2="380" class="arrow-thin"/><line x1="450" y1="380" x2="450" y2="410" class="arrow"/><rect x="30" y="415" width="240" height="65" class="box"/><text x="150" y="433" class="module-name" text-anchor="middle">renderTechDoc()</text><text x="150" y="458" class="module-desc" text-anchor="middle">技术版</text>
+<text x="150" y="473" class="module-desc" text-anchor="middle">·函数签名 ·参数表格</text>
+<text x="150" y="488" class="module-desc" text-anchor="middle">·健康度评分</text><rect x="330" y="415" width="240" height="65" class="box"/><text x="450" y="433" class="module-name" text-anchor="middle">renderBeginnerDoc()</text><text x="450" y="458" class="module-desc" text-anchor="middle">小白版</text>
+<text x="450" y="473" class="module-desc" text-anchor="middle">·比喻叙事 ·模式补充</text>
+<text x="450" y="488" class="module-desc" text-anchor="middle">·推论标记</text><rect x="630" y="415" width="240" height="65" class="box"/><text x="750" y="433" class="module-name" text-anchor="middle">renderSemanticDoc()</text><text x="750" y="458" class="module-desc" text-anchor="middle">语义版</text>
+<text x="750" y="473" class="module-desc" text-anchor="middle">·算法逻辑 ·数据流</text>
+<text x="750" y="488" class="module-desc" text-anchor="middle">·推论标记</text><line x1="150" y1="480" x2="150" y2="520" class="arrow-thin"/><line x1="150" y1="520" x2="450" y2="520" class="arrow-thin"/><line x1="450" y1="480" x2="450" y2="520" class="arrow-thin"/><line x1="450" y1="520" x2="450" y2="520" class="arrow-thin"/><line x1="750" y1="480" x2="750" y2="520" class="arrow-thin"/><line x1="750" y1="520" x2="450" y2="520" class="arrow-thin"/><line x1="450" y1="520" x2="450" y2="545" class="arrow"/><rect x="280" y="550" width="340" height="36" class="box-accent"/><text x="450" y="573" class="module-name" text-anchor="middle">右侧面板（三标签页显示）</text><line x1="450" y1="586" x2="450" y2="610" class="arrow"/><rect x="250" y="615" width="400" height="100" class="box"/><text x="450" y="633" class="module-name" text-anchor="middle">recordParse()</text><text x="450" y="655" class="module-desc" text-anchor="middle">appStats.total++  ·  patternStats["递归"]++</text><text x="450" y="672" class="module-desc" text-anchor="middle">metaphorHits["sort"]++  ·  history.unshift({...})</text><text x="450" y="689" class="module-desc" text-anchor="middle">parseDays[today]++  →  checkBadges()  →  saveStats()</text><line x1="450" y1="715" x2="450" y2="740" class="arrow"/><rect x="300" y="745" width="300" height="36" class="box-accent"/><text x="450" y="768" class="module-name" text-anchor="middle">localStorage 持久化 + renderAllUI() 刷新</text><line x1="150" y1="763" x2="150" y2="800" class="arrow-thin dashed"/><line x1="150" y1="800" x2="150" y2="800" class="arrow-thin dashed"/></svg>
